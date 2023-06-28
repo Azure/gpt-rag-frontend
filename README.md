@@ -111,6 +111,26 @@ file: ```frontend/src/components/ClearChatButton.tsx```
         </div>
 ```
 
+**3) Citations**
+
+You can remove citations from the answers if you do not want them. Just set showSources to {false}
+
+file: ```frontend/src/pages/chat/Chat.tsx```
+
+```
+<Answer
+    key={index}
+    answer={answer[1]}
+    isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+    onCitationClicked={c => onShowCitation(c, index)}
+    onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
+    onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+    onFollowupQuestionClicked={q => makeApiRequest(q)}
+    showFollowupQuestions={false}
+    showSources={false}                                            
+/>
+```
+
 **4) Speech Synthesis**
 
 To enable speech synthesis change speechSynthesisEnabled variable to true.

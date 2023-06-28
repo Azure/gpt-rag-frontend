@@ -244,7 +244,8 @@ const Chat = () => {
                                             onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                             onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                             onFollowupQuestionClicked={q => makeApiRequest(q)}
-                                            showFollowupQuestions={useSuggestFollowupQuestions && answers.length - 1 === index}
+                                            showFollowupQuestions={false}
+                                            showSources={true}                                            
                                         />
                                     </div>
                                 </div>

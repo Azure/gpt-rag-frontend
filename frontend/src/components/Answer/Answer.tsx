@@ -16,7 +16,17 @@ interface Props {
     onSupportingContentClicked: () => void;
     onFollowupQuestionClicked?: (question: string) => void;
     showFollowupQuestions?: boolean;
+    showSources?: boolean;
 }
+
+function truncateString(str: string, maxLength: number): string {
+    if (str.length <= maxLength) {
+      return str;
+    }
+    const startLength = Math.ceil((maxLength - 3) / 2);
+    const endLength = Math.floor((maxLength - 3) / 2);
+    return str.substring(0, startLength) + "..." + str.substring(str.length - endLength);
+  }
 
 export const Answer = ({
     answer,
@@ -25,9 +35,10 @@ export const Answer = ({
     onThoughtProcessClicked,
     onSupportingContentClicked,
     onFollowupQuestionClicked,
-    showFollowupQuestions
+    showFollowupQuestions,
+    showSources
 }: Props) => {
-    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, onCitationClicked), [answer]);
+    const parsedAnswer = useMemo(() => parseAnswerToHtml(answer.answer, !!showSources, onCitationClicked), [answer]);
 
     const sanitizedAnswerHtml = DOMPurify.sanitize(parsedAnswer.answerHtml);
 
@@ -45,14 +56,14 @@ export const Answer = ({
                             onClick={() => onThoughtProcessClicked()}
                             disabled={!answer.thoughts}
                         />
-                        <IconButton
+                        {/* <IconButton
                             style={{ color: "black" }}
                             iconProps={{ iconName: "ClipboardList" }}
                             title="Show supporting content"
                             ariaLabel="Show supporting content"
                             onClick={() => onSupportingContentClicked()}
                             disabled={!answer.data_points.length}
-                        />
+                        /> */}
                     </div>
                 </Stack>
             </Stack.Item>
@@ -61,7 +72,7 @@ export const Answer = ({
                 <div className={styles.answerText} dangerouslySetInnerHTML={{ __html: sanitizedAnswerHtml }}></div>
             </Stack.Item>
 
-            {!!parsedAnswer.citations.length && (
+            {!!parsedAnswer.citations.length && showSources && (
                 <Stack.Item>
                     <Stack horizontal wrap tokens={{ childrenGap: 5 }}>
                         <span className={styles.citationLearnMore}>Fuentes:</span>
@@ -69,7 +80,7 @@ export const Answer = ({
                             const path = getCitationFilePath(x);
                             return (
                                 <a key={i} className={styles.citation} title={x} onClick={() => onCitationClicked(path)}>
-                                    {`${++i}. ${x}`}
+                                    {`${++i}. ${truncateString(x, 15)}`}
                                 </a>
                             );
                         })}

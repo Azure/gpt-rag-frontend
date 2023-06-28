@@ -38,13 +38,13 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
             >
                 <div className={styles.thoughtProcess} dangerouslySetInnerHTML={{ __html: sanitizedThoughts }}></div>
             </PivotItem>
-            <PivotItem
+            {/* <PivotItem
                 itemKey={AnalysisPanelTabs.SupportingContentTab}
                 headerText="Supporting content"
                 headerButtonProps={isDisabledSupportingContentTab ? pivotItemDisabledStyle : undefined}
             >
                 <SupportingContent supportingContent={answer.data_points} />
-            </PivotItem>
+            </PivotItem> */}
             <PivotItem
                 itemKey={AnalysisPanelTabs.CitationTab}
                 headerText="Citation"

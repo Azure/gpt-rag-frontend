@@ -7,9 +7,15 @@ type HtmlParsedAnswer = {
     followupQuestions: string[];
 };
 
-export function parseAnswerToHtml(answer: string, onCitationClicked: (citationFilePath: string) => void): HtmlParsedAnswer {
+export function removeCitations(text: string): string {
+    const newText = text.replace(/\[[^\]]*\]/g, '');
+    return newText;
+  }
+
+export function parseAnswerToHtml(answer: string, showSources: boolean, onCitationClicked: (citationFilePath: string) => void): HtmlParsedAnswer {
     const citations: string[] = [];
     const followupQuestions: string[] = [];
+    var answerHtml: string = "";  
 
     // Extract any follow-up questions that might be in the answer
     let parsedAnswer = answer.replace(/<<([^>>]+)>>/g, (match, content) => {
@@ -18,34 +24,40 @@ export function parseAnswerToHtml(answer: string, onCitationClicked: (citationFi
     });
 
     // trim any whitespace from the end of the answer after removing follow-up questions
-    parsedAnswer = parsedAnswer.trim();
+    parsedAnswer.trim();
+    if (showSources) {
+        parsedAnswer;
+        const parts = parsedAnswer.split(/\[([^\]]+)\]/g);
 
-    const parts = parsedAnswer.split(/\[([^\]]+)\]/g);
-
-    const fragments: string[] = parts.map((part, index) => {
-        if (index % 2 === 0) {
-            return part;
-        } else {
-            let citationIndex: number;
-            if (citations.indexOf(part) !== -1) {
-                citationIndex = citations.indexOf(part) + 1;
+        const fragments: string[] = parts.map((part, index) => {
+            if (index % 2 === 0) {
+                return part;
             } else {
-                citations.push(part);
-                citationIndex = citations.length;
+                let citationIndex: number;
+                if (citations.indexOf(part) !== -1) {
+                    citationIndex = citations.indexOf(part) + 1;
+                } else {
+                    citations.push(part);
+                    citationIndex = citations.length;
+                }
+    
+                const path = getCitationFilePath(part);
+    
+                return renderToStaticMarkup(
+                    <a className="supContainer" title={part} onClick={() => onCitationClicked(path)}>
+                        <sup>{citationIndex}</sup>
+                    </a>
+                );
             }
-
-            const path = getCitationFilePath(part);
-
-            return renderToStaticMarkup(
-                <a className="supContainer" title={part} onClick={() => onCitationClicked(path)}>
-                    <sup>{citationIndex}</sup>
-                </a>
-            );
-        }
-    });
+        });
+        answerHtml = fragments.join("");
+    
+    } else {  
+        answerHtml = removeCitations(parsedAnswer);
+    } 
 
     return {
-        answerHtml: fragments.join(""),
+        answerHtml: answerHtml,
         citations,
         followupQuestions
     };
