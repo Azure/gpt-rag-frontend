@@ -51,7 +51,7 @@ npm run build
 
 **6) Deploy to Azure** 
 
-In VSCode with [Azure Web App Extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azureappservice) go to the *Azure* Window, reveal your Web App in the resource explorer, right-click it then select *Deploy to Web App*.
+In VSCode with [Azure Web App Extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azureappservice) go to the *Azure* Window, reveal your Web App in the resource explorer, right-click it then select *Deploy to Web App*. Once Deploy to Web App is selected will ask for which folder to deploy "backend" is the folder that we should select for the deploy.
 
 **7) Deploy locally - Optional**
 
