@@ -15,13 +15,13 @@ Provision the Azure services as explained in [gpt-rag](https://github.com/Azure/
 
 **2) Blob storage location**
 
-Update the blob storage path in the storage_account variable to point to the account where your data is.
+Update the blob storage path in the storage_account variable to point to the account where your data is, tipically it is the account sarting with strag, for example: ```strag```0m4dgz.
 
 file: ```frontend/src/api/api.ts```
 
-Example: storage account ```177960botistorage``` and storage container ```documents```
+Example: storage account ```strag0m4dgz```
 ```
-    var storage_account = "st101574boti";
+    var storage_account = "strag0m4dgz";
 ```
 
 **3) Build App**
