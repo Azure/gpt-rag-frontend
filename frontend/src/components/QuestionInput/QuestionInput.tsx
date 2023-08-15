@@ -35,7 +35,17 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         const audioConfig = AudioConfig.fromDefaultMicrophoneInput();
         const recognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
-        setQuestion("Puede hablar usando su micrófono...");
+        const userLanguage = navigator.language;
+        let reiniciar_text = '';
+        if (userLanguage.startsWith('pt')) {
+          reiniciar_text = 'Pode falar usando seu microfone...';
+        } else if (userLanguage.startsWith('es')) {
+          reiniciar_text = 'Puedes hablar usando su micrófono...';
+        } else {
+          reiniciar_text = 'You can talk using your microphone...';
+        }
+
+        setQuestion(reiniciar_text);
 
         recognizer.recognizeOnceAsync(result => {
             let displayText;
@@ -44,7 +54,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                 //setQuestion(displayText);
                 //onSend(question);
             } else {
-                displayText = 'ERROR: El reconocimiento de voz fué cancelado o la voz no puede ser reconocida. Asegúrese que su micrófono funciona correctamente.';
+                displayText = 'ERROR: Voice recognition was canceled or the voice cannot be recognized. Make sure your microphone is working properly.';
                 //setQuestion(displayText);
             }
             setQuestion(displayText);
