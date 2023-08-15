@@ -10,7 +10,6 @@ import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
-import { SettingsButton } from "../../components/SettingsButton";
 import { ClearChatButton } from "../../components/ClearChatButton";
 import { getTokenOrRefresh } from '../../components/QuestionInput/token_util';
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from 'microsoft-cognitiveservices-speech-sdk';
@@ -19,6 +18,7 @@ const Chat = () => {
     // speech synthesis is disabled by default
     const speechSynthesisEnabled = false;
 
+    const [placeholderText, setPlaceholderText] = useState('');
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
     const [promptTemplate, setPromptTemplate] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
@@ -165,6 +165,14 @@ const Chat = () => {
             triggered.current = true;
             console.log(triggered.current);
         }
+        const language = navigator.language;
+        if (language.startsWith('pt')) {
+          setPlaceholderText('Escreva aqui sua pergunta');
+        }if (language.startsWith('es')) {
+          setPlaceholderText('Escribe tu pregunta aqui');
+        } else {
+          setPlaceholderText('Write your question here');
+        }        
     }, [isLoading]);
 
     const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -221,7 +229,6 @@ const Chat = () => {
         <div className={styles.container}>
             <div className={styles.commandsContainer}>
                 <ClearChatButton className={styles.commandButton} onClick={clearChat} disabled={!lastQuestionRef.current || isLoading} />
-                <SettingsButton className={styles.commandButton} onClick={() => setIsConfigPanelOpen(!isConfigPanelOpen)} />
             </div>
             <div className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
@@ -273,7 +280,7 @@ const Chat = () => {
                     <div className={styles.chatInput}>
                         <QuestionInput
                             clearOnSend
-                            placeholder="Escriba aquí su pregunta"
+                            placeholder={placeholderText}
                             disabled={isLoading}
                             onSend={question => makeApiRequestGpt(question)}
                         />

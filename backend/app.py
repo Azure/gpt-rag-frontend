@@ -7,13 +7,26 @@ import json
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
+from azure.keyvault.secrets import SecretClient
+from azure.identity import DefaultAzureCredential
 
 load_dotenv()
 
-SPEECH_KEY = os.getenv('SPEECH_KEY')
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
-FUNCTION_KEY = os.getenv('FUNCTION_KEY')
+
+def get_secret(secretName):
+    keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
+    KVUri = f"https://{keyVaultName}.vault.azure.net"
+    credential = DefaultAzureCredential()
+    client = SecretClient(vault_url=KVUri, credential=credential)
+    logging.info(f"[orchestrator] retrieving {secretName} secret from {keyVaultName}.")   
+    retrieved_secret = client.get_secret(secretName)
+    return retrieved_secret.value
+
+FUNCTION_KEY = get_secret('orchestratorKey')
+SPEECH_KEY = get_secret('speechKey')
+
 SPEECH_RECOGNITION_LANGUAGE = os.getenv('SPEECH_RECOGNITION_LANGUAGE')
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv('SPEECH_SYNTHESIS_LANGUAGE')
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv('SPEECH_SYNTHESIS_VOICE_NAME')
