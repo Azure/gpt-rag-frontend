@@ -11,7 +11,7 @@ Part of [gpt-rag](https://github.com/Azure/gpt-rag)
 
 **1) Provision Services**
 
-If not done already, provision the services needed as explained in [gpt-rag](https://github.com/Azure/gpt-rag) **Deploy** session.
+Provision the Azure services as explained in [gpt-rag](https://github.com/Azure/gpt-rag) Deploy session, if you haven't done it done already.
 
 **2) Blob storage location**
 
