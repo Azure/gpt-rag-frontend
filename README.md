@@ -7,7 +7,7 @@ Part of [gpt-rag](https://github.com/Azure/gpt-rag)
 **Pre-reqs**
 
 - VS Code with Azure Web App Extension 
-- Node.js 16+
+- Node.js 16+ [windows/mac](https://nodejs.dev/en/download/)  [linux/wsl](https://nodejs.dev/en/download/package-manager/)
 
 **1) Provision Services**
 
@@ -15,32 +15,40 @@ Provision the Azure services as explained in [gpt-rag](https://github.com/Azure/
 
 **2) Blob storage location**
 
-Update the blob storage path in the storage_account variable to point to the account where your data is, tipically it is the account sarting with strag, for example: ```strag```0m4dgz.
+Update the storage account name in the storage_account variable to point to the account where your data is, tipically it is the account sarting with strag, for example: ```strag```0m4dgz.
 
 file: ```frontend/src/api/api.ts```
 
 Example: storage account ```strag0m4dgz```
 ```
-    var storage_account = "strag0m4dgz";
+var storage_account = "strag0m4dgz";
 ```
 
 **3) Build App**
 
-Everytime you change frontend code you need to build it before a new deployment:
+Everytime you change frontend code you need to build it before a new deployment, including in the first time:
 
 ```
 cd frontend
 npm install
 npm run build
 ```
-**6) Deploy locally - Optional** - In order to Test the solution - Once we can connect using Postman success, we recommend to continue with the next step.
 
-```./start.sh```
+**4) Deploy to Azure** 
 
-**6) Deploy to Azure** 
+In VSCode with [Azure Web App Extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azureappservice) go to the *Azure* Window, reveal your Web App in the resource explorer, right-click it then select *Deploy to Web App*. 
 
-In VSCode with [Azure Web App Extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azureappservice) go to the *Azure* Window, reveal your Web App in the resource explorer, right-click it then select *Deploy to Web App*. Once Deploy to Web App is selected will ask for which folder to deploy "backend" is the folder that we should select for the deploy.
+Once Deploy to Web App is selected, it will ask for which folder to deploy **backend** is the folder that we should select for the deploy.
 
+![Alt text](media/select_folder.png)
+
+## **(Optional) Test locally** 
+
+1) rename ```.env.template``` to ```.env``` updating the variables accordingly.
+
+2) run ```azd auth login``` or ```az login```
+
+3) run ```./start.sh```
 
 ## Frontend customizations
 

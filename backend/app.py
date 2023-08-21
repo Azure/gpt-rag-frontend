@@ -14,17 +14,27 @@ load_dotenv()
 
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
+ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI')
 
 def get_secret(secretName):
     keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
     KVUri = f"https://{keyVaultName}.vault.azure.net"
     credential = DefaultAzureCredential()
     client = SecretClient(vault_url=KVUri, credential=credential)
-    logging.info(f"[orchestrator] retrieving {secretName} secret from {keyVaultName}.")   
+    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")   
     retrieved_secret = client.get_secret(secretName)
     return retrieved_secret.value
 
-FUNCTION_KEY = get_secret('orchestratorKey')
+# def get_token(scope):
+#     credential = DefaultAzureCredential()
+#     logging.info(f"[webbackend] retrieving token , scope: {scope}.")
+#     token = ""
+#     try:
+#         token = credential.get_token(f"{scope}").token
+#     except Exception as e:
+#         logging.error(f"[webbackend] error when retrieving security token {str(e)}.")
+#     return token
+
 SPEECH_KEY = get_secret('speechKey')
 
 SPEECH_RECOGNITION_LANGUAGE = os.getenv('SPEECH_RECOGNITION_LANGUAGE')
@@ -43,8 +53,13 @@ def static_file(path):
 def chatgpt():
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
-    print(conversation_id)
-    print(question)
+    logging.info("[webbackend] conversation_id: " + conversation_id)    
+    logging.info("[webbackend] question: " + question)
+
+    # scope = '<replace by orchestrator app id>/.default' 
+    # token=get_token(scope)
+    functionKey = get_secret('host--functionKey--default')
+    
     try:
         url = ORCHESTRATOR_ENDPOINT
         payload = json.dumps({
@@ -52,15 +67,15 @@ def chatgpt():
             "question": question
         })
         headers = {
-            'x-functions-key': FUNCTION_KEY,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'x-functions-key': functionKey  
+            # 'Authorization': "Bearer " + token          
         }
-        
         response = requests.request("GET", url, headers=headers, data=payload)
         print(response.text)
         return(response.text)
     except Exception as e:
-        logging.exception("Exception in /chatgpt")
+        logging.exception("[webbackend] exception in /chatgpt")
         return jsonify({"error": str(e)}), 500
     
 @app.route("/api/get-speech-token", methods=["GET"])
@@ -75,7 +90,7 @@ def getGptSpeechToken():
         access_token = str(response.text)
         return json.dumps({'token': access_token, 'region': SPEECH_REGION, 'speechRecognitionLanguage': SPEECH_RECOGNITION_LANGUAGE, 'speechSynthesisLanguage': SPEECH_SYNTHESIS_LANGUAGE, 'speechSynthesisVoiceName': SPEECH_SYNTHESIS_VOICE_NAME})
     except Exception as e:
-        logging.exception("Exception in /api/get-speech-token")
+        logging.exception("[webbackend] exception in /api/get-speech-token")
         return jsonify({"error": str(e)}), 500
     
 if __name__ == "__main__":
