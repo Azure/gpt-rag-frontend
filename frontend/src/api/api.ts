@@ -95,6 +95,6 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
 }
 
 export function getCitationFilePath(citation: string): string {
-    var storage_account = "strag0tm6yt";
+    var storage_account = "strag0tnt45";
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }

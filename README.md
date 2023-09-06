@@ -6,7 +6,7 @@ Part of [gpt-rag](https://github.com/Azure/gpt-rag)
 
 **Pre-reqs**
 
-- VS Code with Azure Web App Extension 
+- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Node.js 16+ [windows/mac](https://nodejs.dev/en/download/)  [linux/wsl](https://nodejs.dev/en/download/package-manager/)
 
 **1) Provision Services**
