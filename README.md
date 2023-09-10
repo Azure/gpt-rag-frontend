@@ -13,17 +13,6 @@ Part of [gpt-rag](https://github.com/Azure/gpt-rag)
 
 Provision the Azure services as explained in [gpt-rag](https://github.com/Azure/gpt-rag) Deploy session, if you haven't done it done already.
 
-**2) Blob storage location**
-
-Update the storage account name in the storage_account variable to point to the account where your data is, tipically it is the account sarting with strag, for example: ```strag```0m4dgz.
-
-file: ```frontend/src/api/api.ts```
-
-Example: storage account ```strag0m4dgz```
-```
-var storage_account = "strag0m4dgz";
-```
-
 **3) Build App**
 
 Everytime you change frontend code you need to build it before a new deployment, including in the first time:
@@ -98,7 +87,7 @@ file: ```frontend/src/pages/chat/Chat.tsx```
     onCitationClicked={c => onShowCitation(c, index)}
     onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
     onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-    onFollowupQuestionClicked={q => makeApiRequest(q)}
+    onFollowupQuestionClicked={q => makeApiRequestGpt(q)}
     showFollowupQuestions={false}
     showSources={false}                                            
 />
