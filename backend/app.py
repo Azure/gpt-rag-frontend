@@ -15,6 +15,7 @@ load_dotenv()
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
 ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI')
+STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 
 def get_secret(secretName):
     keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
@@ -92,6 +93,16 @@ def getGptSpeechToken():
     except Exception as e:
         logging.exception("[webbackend] exception in /api/get-speech-token")
         return jsonify({"error": str(e)}), 500
-    
+
+@app.route("/api/get-storage-account", methods=["GET"])
+def getStorageAccount():
+    if STORAGE_ACCOUNT is None or STORAGE_ACCOUNT == '':
+        return jsonify({"error": "Add STORAGE_ACCOUNT to frontend app settings"}), 500
+    try:
+        return json.dumps({'storageaccount': STORAGE_ACCOUNT})
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/get-storage-account")
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)

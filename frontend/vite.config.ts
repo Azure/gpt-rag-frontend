@@ -12,7 +12,8 @@ export default defineConfig({
     server: {
         proxy: {
             '/chatgpt': "http://localhost:8000",
-            '/api/get-speech-token': "http://localhost:8000"
+            '/api/get-speech-token': "http://localhost:8000",
+            '/api/get-storage-account': "http://localhost:8000"            
         },
         host: true
     }

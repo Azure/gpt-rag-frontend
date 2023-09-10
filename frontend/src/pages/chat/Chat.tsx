@@ -4,7 +4,7 @@ import { SparkleFilled } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
 
-import { chatApi, chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn } from "../../api";
+import { chatApiGpt, Approaches, AskResponse, ChatRequest, ChatRequestGpt, ChatTurn } from "../../api";
 import { Answer, AnswerError, AnswerLoading } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
 import { ExampleList } from "../../components/Example";
@@ -13,6 +13,16 @@ import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel
 import { ClearChatButton } from "../../components/ClearChatButton";
 import { getTokenOrRefresh } from '../../components/QuestionInput/token_util';
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from 'microsoft-cognitiveservices-speech-sdk';
+
+const userLanguage = navigator.language;
+let error_message_text = '';
+if (userLanguage.startsWith('pt')) {
+    error_message_text = 'Desculpe, tive um problema técnico com a solicitação. Por favor informar o erro a equipe de suporte. Detalhe do erro: ';
+} else if (userLanguage.startsWith('es')) {
+    error_message_text = 'Lo siento, yo tuve un problema con la solicitud. Por favor informe el error al equipo de soporte. Detalle del error: ';
+} else {
+    error_message_text = "I'm sorry, I had a problem with the request. Please report the error to the support team. Error detail: ";
+}
 
 const Chat = () => {
     // speech synthesis is disabled by default
@@ -72,18 +82,7 @@ const Chat = () => {
             console.log(result)
             console.log(result.answer)
             console.log(result.transaction_data)
-            if(result.transaction_data?.cuenta_origen === null && result.transaction_data?.monto === null && result.transaction_data?.telefono_destino === null) {
-                console.log("No es webhook");
-                setAnswers([...answers, [question, result]]);
-            } else {
-                if(result.transaction_data?.cuenta_origen !== "" && result.transaction_data?.monto !== "" && result.transaction_data?.telefono_destino !== "") {
-                    console.log("Ejecutar webhook");
-                    setAnswers([...answers, [question, result]]);
-                } else {
-                    console.log("No es webhook");
-                    setAnswers([...answers, [question, result]]);
-                }
-            }
+            setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);
 
             // Voice Synthesis
@@ -117,37 +116,6 @@ const Chat = () => {
         }
     };
 
-    const makeApiRequest = async (question: string) => {
-        lastQuestionRef.current = question;
-
-        error && setError(undefined);
-        setIsLoading(true);
-        setActiveCitation(undefined);
-        setActiveAnalysisPanelTab(undefined);
-
-        try {
-            const history: ChatTurn[] = answers.map(a => ({ user: a[0], bot: a[1].answer }));
-            const request: ChatRequest = {
-                history: [...history, { user: question, bot: undefined }],
-                approach: Approaches.ReadRetrieveRead,
-                overrides: {
-                    promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
-                    excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
-                    top: retrieveCount,
-                    semanticRanker: useSemanticRanker,
-                    semanticCaptions: useSemanticCaptions,
-                    suggestFollowupQuestions: useSuggestFollowupQuestions
-                }
-            };
-            const result = await chatApi(request);
-            setAnswers([...answers, [question, result]]);
-        } catch (e) {
-            setError(e);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const clearChat = () => {
         lastQuestionRef.current = "";
         error && setError(undefined);
@@ -155,13 +123,11 @@ const Chat = () => {
         setActiveAnalysisPanelTab(undefined);
         setAnswers([]);
         setUserId("");
-        //makeApiRequestGpt("Hola");
     };
 
     useEffect(() => {
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
         if (triggered.current === false) {
-            //makeApiRequestGpt("Hola");
             triggered.current = true;
             console.log(triggered.current);
         }
@@ -200,7 +166,7 @@ const Chat = () => {
     };
 
     const onExampleClicked = (example: string) => {
-        makeApiRequest(example);
+        makeApiRequestGpt(example);
     };
 
     const onShowCitation = (citation: string, index: number) => {
@@ -250,7 +216,7 @@ const Chat = () => {
                                             onCitationClicked={c => onShowCitation(c, index)}
                                             onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                             onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                            onFollowupQuestionClicked={q => makeApiRequest(q)}
+                                            onFollowupQuestionClicked={q => makeApiRequestGpt(q)}
                                             showFollowupQuestions={false}
                                             showSources={true}                                            
                                         />
@@ -269,7 +235,7 @@ const Chat = () => {
                                 <>
                                     <UserChatMessage message={lastQuestionRef.current} />
                                     <div className={styles.chatMessageGptMinWidth}>
-                                        <AnswerError error={error.toString()} onRetry={() => makeApiRequest(lastQuestionRef.current)} />
+                                        <AnswerError error={error_message_text + error.toString()} onRetry={() => makeApiRequestGpt(lastQuestionRef.current)} />
                                     </div>
                                 </>
                             ) : null}
