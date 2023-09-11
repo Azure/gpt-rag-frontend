@@ -81,7 +81,6 @@ const Chat = () => {
             const result = await chatApiGpt(request);
             console.log(result)
             console.log(result.answer)
-            console.log(result.transaction_data)
             setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);
 
