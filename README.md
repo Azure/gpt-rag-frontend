@@ -25,9 +25,23 @@ npm run build
 
 **4) Deploy to Azure** 
 
+Execute the following commands in the terminal to deploy your function:
+
+Enter backend folder
+ 
 ```
 cd backend
+```
+
+Remove backend_env if you have tested it locally
+
+```
 rm -rf backend_env  
+```
+
+Zip source code and deploy it with az weebapp deploy:
+
+```
 zip -r ../deploy.zip *
 cd ..
 az webapp deploy --resource-group [RESOURCE_GROUP_NAME] --name [WEB_APP_NAME] --src-path deploy.zip --type zip --async true
