@@ -17,11 +17,11 @@ import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from 'micr
 const userLanguage = navigator.language;
 let error_message_text = '';
 if (userLanguage.startsWith('pt')) {
-    error_message_text = 'Desculpe, tive um problema técnico com a solicitação. Por favor informar o erro a equipe de suporte. Detalhe do erro: ';
+    error_message_text = 'Desculpe, tive um problema técnico com a solicitação. Por favor informar o erro a equipe de suporte. ';
 } else if (userLanguage.startsWith('es')) {
-    error_message_text = 'Lo siento, yo tuve un problema con la solicitud. Por favor informe el error al equipo de soporte. Detalle del error: ';
+    error_message_text = 'Lo siento, yo tuve un problema con la solicitud. Por favor informe el error al equipo de soporte. ';
 } else {
-    error_message_text = "I'm sorry, I had a problem with the request. Please report the error to the support team. Error detail: ";
+    error_message_text = "I'm sorry, I had a problem with the request. Please report the error to the support team. ";
 }
 
 const Chat = () => {

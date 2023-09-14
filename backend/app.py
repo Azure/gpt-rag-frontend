@@ -59,8 +59,13 @@ def chatgpt():
 
     # scope = '<replace by orchestrator app id>/.default' 
     # token=get_token(scope)
-    functionKey = get_secret('host--functionKey--default')
-    
+    try:
+        keySecretName = 'host--functionKey--default'
+        functionKey = get_secret(keySecretName)
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/host--functionKey--default")
+        return jsonify({"error": f"Check orchestrator function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
+        
     try:
         url = ORCHESTRATOR_ENDPOINT
         payload = json.dumps({
