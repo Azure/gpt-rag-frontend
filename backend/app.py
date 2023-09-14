@@ -64,7 +64,7 @@ def chatgpt():
         functionKey = get_secret(keySecretName)
     except Exception as e:
         logging.exception("[webbackend] exception in /api/host--functionKey--default")
-        return jsonify({"error": f"Check orchestrator function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
+        return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
         
     try:
         url = ORCHESTRATOR_ENDPOINT
