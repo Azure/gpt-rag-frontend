@@ -15,12 +15,15 @@ Part of [GPT-RAG](https://github.com/Azure/gpt-rag)
 
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Node.js 16+ [windows/mac](https://nodejs.dev/en/download/)  [linux/wsl](https://nodejs.dev/en/download/package-manager/)
+- Install ZIP in WSL/Linux: sudo apt-get install zip
+  
+**1) Clone the Repository**
 
-**1) Provision Services**
+```
+git clone https://github.com/Azure/gpt-rag-frontend.git
+```
 
-Provision the Azure services as explained in [gpt-rag](https://github.com/Azure/gpt-rag) Deploy session, if you haven't done it done already.
-
-**3) Build App**
+**2) Build App**
 
 Everytime you change frontend code you need to build it before a new deployment, including in the first time:
 
@@ -30,13 +33,14 @@ npm install
 npm run build
 ```
 
-**4) Deploy to Azure** 
+**3) Deploy to Azure** 
 
 Execute the following commands in the terminal to deploy your function:
 
 Enter backend folder
  
 ```
+cd ..
 cd backend
 ```
 
