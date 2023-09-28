@@ -2,25 +2,15 @@
 
 Part of [GPT-RAG](https://github.com/Azure/gpt-rag)
 
-## Components
-
-**1** [Data ingestion](https://github.com/Azure/gpt-rag-ingestion)
-
-**2** [Orchestrator](https://github.com/Azure/gpt-rag-orchestrator)
-
-
 ## Deploy (quickstart)
 
 **Pre-reqs**
 
+- Zip command
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Node.js 16+ [windows/mac](https://nodejs.dev/en/download/)  [linux/wsl](https://nodejs.dev/en/download/package-manager/)
 
-**1) Provision Services**
-
-Provision the Azure services as explained in [gpt-rag](https://github.com/Azure/gpt-rag) Deploy session, if you haven't done it done already.
-
-**3) Build App**
+**1) Build App**
 
 Everytime you change frontend code you need to build it before a new deployment, including in the first time:
 
@@ -30,29 +20,42 @@ npm install
 npm run build
 ```
 
-**4) Deploy to Azure** 
+**2) Deploy to Azure** 
 
 Execute the following commands in the terminal to deploy your function:
 
-Enter backend folder
+2.1. Enter backend folder
  
 ```
+cd ..
 cd backend
 ```
 
-Remove backend_env if you have tested it locally
+2.2. Remove backend_env if you have tested it locally
 
 ```
 rm -rf backend_env  
 ```
 
-Zip source code and deploy it with az weebapp deploy:
+2.3. Zip source code
 
+Linux or Mac:
 ```
 zip -r ../deploy.zip *
-cd ..
-az webapp deploy --resource-group [RESOURCE_GROUP_NAME] --name [WEB_APP_NAME] --src-path deploy.zip --type zip --async true
 ```
+
+Windows:
+```
+tar -a -c -f ../deploy.zip *
+```
+
+2.4. Deploy it with az weebapp deploy:
+
+```
+cd ..
+az webapp deploy --subscription [SUBSCRIPTION_ID] --resource-group [RESOURCE_GROUP_NAME] --name [WEB_APP_NAME] --src-path deploy.zip --type zip --async true
+```
+
 
 ## **(Optional) Test locally** 
 
