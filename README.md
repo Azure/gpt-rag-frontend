@@ -17,6 +17,10 @@ Part of [GPT-RAG](https://github.com/Azure/gpt-rag)
 git clone https://github.com/Azure/gpt-rag-frontend.git
 ```
 
+If you plan to customize the ingestion logic, create a new repo by clicking on the Use **this template** button on top of this page.
+
+If you created a new repository please update the repository URL before running the git clone command
+
 **2) Build App**
 
 Everytime you change frontend code you need to build it before a new deployment, including in the first time:
@@ -27,7 +31,7 @@ npm install
 npm run build
 ```
 
-**2) Deploy to Azure** 
+**3) Deploy to Azure** 
 
 Execute the following commands in the terminal to deploy your function:
 
@@ -62,7 +66,6 @@ tar -a -c -f ../deploy.zip *
 cd ..
 az webapp deploy --subscription [SUBSCRIPTION_ID] --resource-group [RESOURCE_GROUP_NAME] --name [WEB_APP_NAME] --src-path deploy.zip --type zip --async true
 ```
-
 
 ## **(Optional) Test locally** 
 
