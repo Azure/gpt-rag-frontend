@@ -60,7 +60,7 @@ Windows:
 tar -a -c -f ../deploy.zip *
 ```
 
-2.4. Deploy it with az weebapp deploy:
+2.4. Deploy it with az webapp deploy:
 
 ```
 cd ..
