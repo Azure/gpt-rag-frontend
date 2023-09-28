@@ -9,8 +9,15 @@ Part of [GPT-RAG](https://github.com/Azure/gpt-rag)
 - Zip command
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Node.js 16+ [windows/mac](https://nodejs.dev/en/download/)  [linux/wsl](https://nodejs.dev/en/download/package-manager/)
+- Install ZIP in WSL/Linux: sudo apt-get install zip
+  
+**1) Clone the Repository**
 
-**1) Build App**
+```
+git clone https://github.com/Azure/gpt-rag-frontend.git
+```
+
+**2) Build App**
 
 Everytime you change frontend code you need to build it before a new deployment, including in the first time:
 
