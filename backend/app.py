@@ -54,10 +54,12 @@ def chatgpt():
     logging.info(f"[webbackend] User name: {client_principal_name}")
 
     try:
-        keySecretName = 'host--functionKey--default'
+        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
+        # It is set during the infrastructure deployment.
+        keySecretName = 'orchestrator-host--functionKey'
         functionKey = get_secret(keySecretName)
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/host--functionKey--default")
+        logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
         return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
         
     try:
