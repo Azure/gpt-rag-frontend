@@ -77,7 +77,7 @@ az webapp deploy --subscription [SUBSCRIPTION_ID] --resource-group [RESOURCE_GRO
 
 ## Frontend customizations
 
-Optionally you can customize some itens in the frontend.
+Optionally you can customize some items in the frontend.
 
 **1) Title**
 
