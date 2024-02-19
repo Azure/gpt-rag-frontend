@@ -1,11 +1,13 @@
+import React, { Suspense, lazy, useState, useEffect } from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import DOMPurify from "dompurify";
-
 import styles from "./AnalysisPanel.module.css";
-
 import { SupportingContent } from "../SupportingContent";
 import { AskResponse } from "../../api";
 import { AnalysisPanelTabs } from "./AnalysisPanelTabs";
+import { getPagePDF } from "../../utils/functions";
+
+const LazyPdfViewer = lazy(() => import("../PDFViewer/PDFViewer"));
 
 interface Props {
     className: string;
@@ -22,6 +24,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
+    const page = getPagePDF(answer.data_points.toString());
 
     const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts!);
 
@@ -38,12 +41,15 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
             >
                 <div className={styles.thoughtProcess} dangerouslySetInnerHTML={{ __html: sanitizedThoughts }}></div>
             </PivotItem>
+
             <PivotItem
                 itemKey={AnalysisPanelTabs.CitationTab}
                 headerText="Citation"
                 headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
             >
-                <iframe title="Citation" src={activeCitation} width="100%" height={citationHeight} />
+                <Suspense fallback={<p>Cargando...</p>}>
+                    <LazyPdfViewer base64Pdf={activeCitation} page={page} />
+                </Suspense>
             </PivotItem>
         </Pivot>
     );
