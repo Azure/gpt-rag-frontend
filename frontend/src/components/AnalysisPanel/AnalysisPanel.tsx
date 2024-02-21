@@ -5,9 +5,9 @@ import styles from "./AnalysisPanel.module.css";
 import { SupportingContent } from "../SupportingContent";
 import { AskResponse } from "../../api";
 import { AnalysisPanelTabs } from "./AnalysisPanelTabs";
-import { getPagePDF } from "../../utils/functions";
+import { getPage, getFileType } from "../../utils/functions";
 
-const LazyPdfViewer = lazy(() => import("../PDFViewer/PDFViewer"));
+const LazyViewer = lazy(() => import("../DocView/DocView"));
 
 interface Props {
     className: string;
@@ -24,7 +24,9 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
-    const page = getPagePDF(answer.data_points.toString());
+    const page = getPage(answer.data_points.toString());
+    /** get file type */
+    const fileType = getFileType(activeCitation || "");
 
     const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts!);
 
@@ -48,7 +50,7 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
                 headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
             >
                 <Suspense fallback={<p>Cargando...</p>}>
-                    <LazyPdfViewer base64Pdf={activeCitation} page={page} />
+                    <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
                 </Suspense>
             </PivotItem>
         </Pivot>

@@ -9,15 +9,17 @@
     "watch": "tsc && vite build --watch"
   },
   "dependencies": {
+    "@cyntler/react-doc-viewer": "^1.14.1",
     "@fluentui/react": "^8.105.3",
     "@fluentui/react-icons": "^2.0.195",
     "@react-spring/web": "^9.7.1",
     "dompurify": "^3.0.1",
+    "microsoft-cognitiveservices-speech-sdk": "^1.27.0",
     "react": "^18.2.0",
+    "react-doc-viewer": "^0.1.5",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.8.1",
-    "universal-cookie": "^4.0.4",
-    "microsoft-cognitiveservices-speech-sdk": "^1.27.0"
+    "universal-cookie": "^4.0.4"
   },
   "devDependencies": {
     "@types/dompurify": "^2.4.0",
