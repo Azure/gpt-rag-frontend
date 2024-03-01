@@ -26,10 +26,15 @@ export function getFileType(citation: string): string {
         case "xlsx":
             return "xlsx";
         case "jpg":
+            return "jpg";
         case "jpeg":
+            return "jpeg";
         case "png":
+            return "png";
         case "gif":
-            return "image";
+            return "gif";
+        case "txt":
+            return "txt";
         default:
             return "unknown";
     }

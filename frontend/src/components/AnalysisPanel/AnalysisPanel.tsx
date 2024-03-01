@@ -16,17 +16,16 @@ interface Props {
     activeCitation: string | undefined;
     citationHeight: string;
     answer: AskResponse;
+    fileType: string;
 }
 
 const pivotItemDisabledStyle = { disabled: true, style: { color: "grey" } };
 
-export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged }: Props) => {
+export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
     const page = getPage(answer.data_points.toString());
-    /** get file type */
-    const fileType = getFileType(activeCitation || "");
 
     const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts!);
 

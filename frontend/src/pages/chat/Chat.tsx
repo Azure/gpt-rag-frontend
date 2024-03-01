@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton } from "@fluentui/react";
-import { SparkleFilled } from "@fluentui/react-icons";
+import { SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
 
@@ -13,6 +13,7 @@ import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel
 import { ClearChatButton } from "../../components/ClearChatButton";
 import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
+import { getFileType } from "../../utils/functions";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -39,6 +40,7 @@ const Chat = () => {
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
+    const [fileType, setFileType] = useState<string>("");
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -117,6 +119,7 @@ const Chat = () => {
     };
 
     const clearChat = () => {
+        console.log("file is" + fileType);
         lastQuestionRef.current = "";
         error && setError(undefined);
         setActiveCitation(undefined);
@@ -127,6 +130,10 @@ const Chat = () => {
 
     /**Get Pdf */
     const getPdf = async (pdfName: string) => {
+        /** get file type */
+        let type = getFileType("MN_NoSQL_DB.pptx");
+        setFileType(type);
+
         try {
             const response = await fetch("/api/get-blob", {
                 method: "POST",
@@ -134,22 +141,28 @@ const Chat = () => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    blob_name: pdfName
+                    //blob_name: pdfName
+                    blob_name: "MN_NoSQL_DB.pptx"
                 })
             });
 
             if (!response.ok) {
-                throw new Error(`Error fetching PDF: ${response.status}`);
+                throw new Error(`Error fetching DOC: ${response.status}`);
             }
 
             return await response.blob();
         } catch (error) {
             console.error(error);
-            throw new Error("Error en la obtención del PDF.");
+            throw new Error("Error en la obtención del Archivo.");
         }
     };
 
     useEffect(() => {
+        /**Modificacion Temporal*/
+        setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+        onShowCitation(AnalysisPanelTabs.CitationTab, 0);
+        /***/
+
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
         if (triggered.current === false) {
             triggered.current = true;
@@ -196,22 +209,25 @@ const Chat = () => {
 
     const onShowCitation = async (citation: string, index: number) => {
         const response = await getPdf(citation);
-        if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+        /* if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
-        } else {
-            var file = new Blob([response as BlobPart], { type: "application/pdf" });
-            readFile(file);
+        } else {*/
+        /**MODIFICACION TEMPORAL */
+        //var file = new Blob([response as BlobPart], { type: "application/pdf" });
+        var file = new Blob([response as BlobPart]);
+        /**END */
+        readFile(file);
 
-            function readFile(input: Blob) {
-                const fr = new FileReader();
-                fr.readAsDataURL(input);
-                fr.onload = function (event) {
-                    const res: any = event.target ? event.target.result : undefined;
-                    setActiveCitation(res);
-                };
-            }
-            setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+        function readFile(input: Blob) {
+            const fr = new FileReader();
+            fr.readAsDataURL(input);
+            fr.onload = function (event) {
+                const res: any = event.target ? event.target.result : undefined;
+                setActiveCitation(res);
+            };
         }
+        setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+        //}
 
         setSelectedAnswer(index);
     };
@@ -294,14 +310,16 @@ const Chat = () => {
                     </div>
                 </div>
 
-                {answers.length > 0 && activeAnalysisPanelTab && (
+                {answers.length >= 0 && fileType !== "" && activeAnalysisPanelTab && (
                     <AnalysisPanel
                         className={styles.chatAnalysisPanel}
                         activeCitation={activeCitation}
                         onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
                         citationHeight="810px"
-                        answer={answers[selectedAnswer][1]}
+                        //answer={answers[selectedAnswer][1]}
+                        answer={{ answer: "", data_points: [""], thoughts: "" }}
                         activeTab={activeAnalysisPanelTab}
+                        fileType={fileType}
                     />
                 )}
 
