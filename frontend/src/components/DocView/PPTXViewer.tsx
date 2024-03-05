@@ -1,17 +1,17 @@
-import React from "react";
-import FileViewer from "offices-viewer";
+import React, { useState, useEffect } from "react";
 
 interface PptxViewerProps {
     file: Blob;
-    fileType: string;
 }
 
-const PptxViewer: React.FC<PptxViewerProps> = ({ file, fileType }) => {
-    const objectUrl = URL.createObjectURL(file);
+const PptxViewer: React.FC<PptxViewerProps> = ({ file }) => {
+    let url = URL.createObjectURL(file);
+
+    useEffect(() => {}, []);
 
     return (
         <div>
-            <h3>ACA DEBERIA ESTAR EL PPT</h3>
+            <iframe srcDoc={url}></iframe>
         </div>
     );
 };

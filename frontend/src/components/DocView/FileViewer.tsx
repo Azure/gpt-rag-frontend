@@ -23,6 +23,7 @@ const FileViewer: React.ComponentType<FileViewerProps> = ({ file, fileType, page
             componentProps.page = page;
             break;
         case "txt":
+        case "cvs":
             ViewerComponent = TextViewer;
             break;
         case "docx":

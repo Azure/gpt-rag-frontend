@@ -4,7 +4,7 @@ interface ImgViewerProps {
 const IMGViewer: React.FC<ImgViewerProps> = ({ file }) => {
     const imageUrl = URL.createObjectURL(file);
     return (
-        <div>
+        <div style={{ width: "100%" }}>
             <img src={imageUrl} alt="Imagen" />
         </div>
     );

@@ -56,8 +56,6 @@ const Chat = () => {
 
     const makeApiRequestGpt = async (question: string) => {
         lastQuestionRef.current = question;
-        console.log("question", question);
-        console.log("userId", userId);
 
         error && setError(undefined);
         setIsLoading(true);
@@ -131,7 +129,7 @@ const Chat = () => {
     /**Get Pdf */
     const getPdf = async (pdfName: string) => {
         /** get file type */
-        let type = getFileType("MN_NoSQL_DB.pptx");
+        let type = getFileType(pdfName);
         setFileType(type);
 
         try {
@@ -141,8 +139,7 @@ const Chat = () => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    //blob_name: pdfName
-                    blob_name: "MN_NoSQL_DB.pptx"
+                    blob_name: pdfName
                 })
             });
 
@@ -158,11 +155,6 @@ const Chat = () => {
     };
 
     useEffect(() => {
-        /**Modificacion Temporal*/
-        setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
-        onShowCitation(AnalysisPanelTabs.CitationTab, 0);
-        /***/
-
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
         if (triggered.current === false) {
             triggered.current = true;
@@ -209,25 +201,24 @@ const Chat = () => {
 
     const onShowCitation = async (citation: string, index: number) => {
         const response = await getPdf(citation);
-        /* if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+        if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
-        } else {*/
-        /**MODIFICACION TEMPORAL */
-        //var file = new Blob([response as BlobPart], { type: "application/pdf" });
-        var file = new Blob([response as BlobPart]);
-        /**END */
-        readFile(file);
+        } else {
+            //var file = new Blob([response as BlobPart], { type: "application/pdf" });
+            var file = new Blob([response as BlobPart]);
 
-        function readFile(input: Blob) {
-            const fr = new FileReader();
-            fr.readAsDataURL(input);
-            fr.onload = function (event) {
-                const res: any = event.target ? event.target.result : undefined;
-                setActiveCitation(res);
-            };
+            readFile(file);
+
+            function readFile(input: Blob) {
+                const fr = new FileReader();
+                fr.readAsDataURL(input);
+                fr.onload = function (event) {
+                    const res: any = event.target ? event.target.result : undefined;
+                    setActiveCitation(res);
+                };
+            }
+            setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
         }
-        setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
-        //}
 
         setSelectedAnswer(index);
     };
@@ -310,14 +301,13 @@ const Chat = () => {
                     </div>
                 </div>
 
-                {answers.length >= 0 && fileType !== "" && activeAnalysisPanelTab && (
+                {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                     <AnalysisPanel
                         className={styles.chatAnalysisPanel}
                         activeCitation={activeCitation}
                         onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
                         citationHeight="810px"
-                        //answer={answers[selectedAnswer][1]}
-                        answer={{ answer: "", data_points: [""], thoughts: "" }}
+                        answer={answers[selectedAnswer][1]}
                         activeTab={activeAnalysisPanelTab}
                         fileType={fileType}
                     />
