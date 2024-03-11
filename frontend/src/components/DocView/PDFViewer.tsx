@@ -4,7 +4,7 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 
 interface PDFRenderProps {
-    file: string;
+    file: Blob | MediaSource;
     page?: number;
     fileType?: string;
 }
