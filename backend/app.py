@@ -4,11 +4,13 @@ import time
 import logging
 import requests
 import json
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
 from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
+from azure.storage.blob import BlobServiceClient
+from urllib.parse import unquote
 
 load_dotenv()
 
@@ -109,5 +111,24 @@ def getStorageAccount():
         logging.exception("[webbackend] exception in /api/get-storage-account")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/get-blob", methods=["POST"])
+def getBlob():
+    logging.exception ("------------------ENTRA ------------")
+    blob_name = unquote(request.json["blob_name"])
+    try:
+        client_credential = DefaultAzureCredential()
+        blob_service_client = BlobServiceClient(
+            f"https://{STORAGE_ACCOUNT}.blob.core.windows.net",
+            client_credential
+        )
+        blob_client = blob_service_client.get_blob_client(container='documents', blob=blob_name)
+        blob_data = blob_client.download_blob()
+        blob_text = blob_data.readall()
+        return Response(blob_text, content_type='application/octet-stream')
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/get-blob")
+        logging.exception(blob_name)
+        return jsonify({"error": str(e)}), 500
+    
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)

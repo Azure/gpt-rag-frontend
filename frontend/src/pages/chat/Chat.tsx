@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton } from "@fluentui/react";
-import { SparkleFilled } from "@fluentui/react-icons";
+import { SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
 
 import styles from "./Chat.module.css";
 
@@ -11,15 +11,16 @@ import { ExampleList } from "../../components/Example";
 import { UserChatMessage } from "../../components/UserChatMessage";
 import { AnalysisPanel, AnalysisPanelTabs } from "../../components/AnalysisPanel";
 import { ClearChatButton } from "../../components/ClearChatButton";
-import { getTokenOrRefresh } from '../../components/QuestionInput/token_util';
-import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from 'microsoft-cognitiveservices-speech-sdk';
+import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
+import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
+import { getFileType } from "../../utils/functions";
 
 const userLanguage = navigator.language;
-let error_message_text = '';
-if (userLanguage.startsWith('pt')) {
-    error_message_text = 'Desculpe, tive um problema técnico com a solicitação. Por favor informar o erro a equipe de suporte. ';
-} else if (userLanguage.startsWith('es')) {
-    error_message_text = 'Lo siento, yo tuve un problema con la solicitud. Por favor informe el error al equipo de soporte. ';
+let error_message_text = "";
+if (userLanguage.startsWith("pt")) {
+    error_message_text = "Desculpe, tive um problema técnico com a solicitação. Por favor informar o erro a equipe de suporte. ";
+} else if (userLanguage.startsWith("es")) {
+    error_message_text = "Lo siento, yo tuve un problema con la solicitud. Por favor informe el error al equipo de soporte. ";
 } else {
     error_message_text = "I'm sorry, I had a problem with the request. Please report the error to the support team. ";
 }
@@ -28,7 +29,7 @@ const Chat = () => {
     // speech synthesis is disabled by default
     const speechSynthesisEnabled = false;
 
-    const [placeholderText, setPlaceholderText] = useState('');
+    const [placeholderText, setPlaceholderText] = useState("");
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
     const [promptTemplate, setPromptTemplate] = useState<string>("");
     const [retrieveCount, setRetrieveCount] = useState<number>(3);
@@ -39,6 +40,7 @@ const Chat = () => {
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
+    const [fileType, setFileType] = useState<string>("");
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -54,15 +56,13 @@ const Chat = () => {
 
     const makeApiRequestGpt = async (question: string) => {
         lastQuestionRef.current = question;
-        console.log("question", question);
-        console.log("userId", userId);
 
         error && setError(undefined);
         setIsLoading(true);
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
 
-       try {
+        try {
             const history: ChatTurn[] = answers.map(a => ({ user: a[0], bot: a[1].answer }));
             const request: ChatRequestGpt = {
                 history: [...history, { user: question, bot: undefined }],
@@ -79,8 +79,8 @@ const Chat = () => {
                 }
             };
             const result = await chatApiGpt(request);
-            console.log(result)
-            console.log(result.answer)
+            console.log(result);
+            console.log(result.answer);
             setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);
 
@@ -93,7 +93,8 @@ const Chat = () => {
                 speechConfig.speechSynthesisVoiceName = tokenObj.speechSynthesisVoiceName;
                 const synthesizer = new SpeechSynthesizer(speechConfig, audioConfig);
 
-                synthesizer.speakTextAsync(result.answer.replace(/ *\[[^)]*\] */g, ""),
+                synthesizer.speakTextAsync(
+                    result.answer.replace(/ *\[[^)]*\] */g, ""),
                     function (result) {
                         if (result.reason === ResultReason.SynthesizingAudioCompleted) {
                             console.log("synthesis finished.");
@@ -105,9 +106,9 @@ const Chat = () => {
                     function (err) {
                         console.trace("err - " + err);
                         synthesizer.close();
-                    });
+                    }
+                );
             }
-
         } catch (e) {
             setError(e);
         } finally {
@@ -116,12 +117,41 @@ const Chat = () => {
     };
 
     const clearChat = () => {
+        console.log("file is" + fileType);
         lastQuestionRef.current = "";
         error && setError(undefined);
         setActiveCitation(undefined);
         setActiveAnalysisPanelTab(undefined);
         setAnswers([]);
         setUserId("");
+    };
+
+    /**Get Pdf */
+    const getPdf = async (pdfName: string) => {
+        /** get file type */
+        let type = getFileType(pdfName);
+        setFileType(type);
+
+        try {
+            const response = await fetch("/api/get-blob", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    blob_name: pdfName
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error fetching DOC: ${response.status}`);
+            }
+
+            return await response.blob();
+        } catch (error) {
+            console.error(error);
+            throw new Error("Error en la obtención del Archivo.");
+        }
     };
 
     useEffect(() => {
@@ -131,13 +161,14 @@ const Chat = () => {
             console.log(triggered.current);
         }
         const language = navigator.language;
-        if (language.startsWith('pt')) {
-          setPlaceholderText('Escreva aqui sua pergunta');
-        }if (language.startsWith('es')) {
-          setPlaceholderText('Escribe tu pregunta aqui');
+        if (language.startsWith("pt")) {
+            setPlaceholderText("Escreva aqui sua pergunta");
+        }
+        if (language.startsWith("es")) {
+            setPlaceholderText("Escribe tu pregunta aqui");
         } else {
-          setPlaceholderText('Write your question here');
-        }        
+            setPlaceholderText("Write your question here");
+        }
     }, [isLoading]);
 
     const onPromptTemplateChange = (_ev?: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>, newValue?: string) => {
@@ -168,17 +199,40 @@ const Chat = () => {
         makeApiRequestGpt(example);
     };
 
-    const onShowCitation = (citation: string, index: number) => {
-        
+    const onShowCitation = async (citation: string, index: number) => {
+        const response = await getPdf(citation);
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
-            setActiveCitation(citation);
+            //var file = new Blob([response as BlobPart], { type: "application/pdf" });
+            var file = new Blob([response as BlobPart]);
+
+            readFile(file);
+
+            function readFile(input: Blob) {
+                const fr = new FileReader();
+                fr.readAsDataURL(input);
+                fr.onload = function (event) {
+                    const res: any = event.target ? event.target.result : undefined;
+                    setActiveCitation(res);
+                };
+            }
             setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
         }
 
         setSelectedAnswer(index);
     };
+
+    // const onShowCitation = (citation: string, index: number) => {
+    //     if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+    //         setActiveAnalysisPanelTab(undefined);
+    //     } else {
+    //         setActiveCitation(citation);
+    //         setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+    //     }
+
+    //     setSelectedAnswer(index);
+    // };
 
     const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
         if (activeAnalysisPanelTab === tab && selectedAnswer === index) {
@@ -217,7 +271,7 @@ const Chat = () => {
                                             onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                             onFollowupQuestionClicked={q => makeApiRequestGpt(q)}
                                             showFollowupQuestions={false}
-                                            showSources={true}                                            
+                                            showSources={true}
                                         />
                                     </div>
                                 </div>
@@ -243,16 +297,11 @@ const Chat = () => {
                     )}
 
                     <div className={styles.chatInput}>
-                        <QuestionInput
-                            clearOnSend
-                            placeholder={placeholderText}
-                            disabled={isLoading}
-                            onSend={question => makeApiRequestGpt(question)}
-                        />
+                        <QuestionInput clearOnSend placeholder={placeholderText} disabled={isLoading} onSend={question => makeApiRequestGpt(question)} />
                     </div>
                 </div>
 
-                {answers.length > 0 && activeAnalysisPanelTab && (
+                {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
                     <AnalysisPanel
                         className={styles.chatAnalysisPanel}
                         activeCitation={activeCitation}
@@ -260,6 +309,7 @@ const Chat = () => {
                         citationHeight="810px"
                         answer={answers[selectedAnswer][1]}
                         activeTab={activeAnalysisPanelTab}
+                        fileType={fileType}
                     />
                 )}
 

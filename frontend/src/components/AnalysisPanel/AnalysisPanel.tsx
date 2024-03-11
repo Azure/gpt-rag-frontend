@@ -1,11 +1,13 @@
+import React, { Suspense, lazy, useState, useEffect } from "react";
 import { Pivot, PivotItem } from "@fluentui/react";
 import DOMPurify from "dompurify";
-
 import styles from "./AnalysisPanel.module.css";
-
 import { SupportingContent } from "../SupportingContent";
 import { AskResponse } from "../../api";
 import { AnalysisPanelTabs } from "./AnalysisPanelTabs";
+import { getPage, getFileType } from "../../utils/functions";
+
+const LazyViewer = lazy(() => import("../DocView/DocView"));
 
 interface Props {
     className: string;
@@ -14,14 +16,16 @@ interface Props {
     activeCitation: string | undefined;
     citationHeight: string;
     answer: AskResponse;
+    fileType: string;
 }
 
 const pivotItemDisabledStyle = { disabled: true, style: { color: "grey" } };
 
-export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged }: Props) => {
+export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeight, className, onActiveTabChanged, fileType }: Props) => {
     const isDisabledThoughtProcessTab: boolean = !answer.thoughts;
     const isDisabledSupportingContentTab: boolean = !answer.data_points.length;
     const isDisabledCitationTab: boolean = !activeCitation;
+    const page = getPage(answer.data_points.toString());
 
     const sanitizedThoughts = DOMPurify.sanitize(answer.thoughts!);
 
@@ -38,12 +42,15 @@ export const AnalysisPanel = ({ answer, activeTab, activeCitation, citationHeigh
             >
                 <div className={styles.thoughtProcess} dangerouslySetInnerHTML={{ __html: sanitizedThoughts }}></div>
             </PivotItem>
+
             <PivotItem
                 itemKey={AnalysisPanelTabs.CitationTab}
                 headerText="Citation"
                 headerButtonProps={isDisabledCitationTab ? pivotItemDisabledStyle : undefined}
             >
-                <iframe title="Citation" src={activeCitation} width="100%" height={citationHeight} />
+                <Suspense fallback={<p>Cargando...</p>}>
+                    <LazyViewer base64Doc={activeCitation} page={page} fileType={fileType} />
+                </Suspense>
             </PivotItem>
         </Pivot>
     );
