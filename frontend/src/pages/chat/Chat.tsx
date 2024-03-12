@@ -199,8 +199,8 @@ const Chat = () => {
         makeApiRequestGpt(example);
     };
 
-    const onShowCitation = async (citation: string, index: number) => {
-        const response = await getPdf(citation);
+    const onShowCitation = async (citation: string, fileName: string, index: number) => {
+        const response = await getPdf(fileName);
         if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
@@ -266,7 +266,7 @@ const Chat = () => {
                                             key={index}
                                             answer={answer[1]}
                                             isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                            onCitationClicked={c => onShowCitation(c, index)}
+                                            onCitationClicked={(c, n) => onShowCitation(c, n, index)}
                                             onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
                                             onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
                                             onFollowupQuestionClicked={q => makeApiRequestGpt(q)}

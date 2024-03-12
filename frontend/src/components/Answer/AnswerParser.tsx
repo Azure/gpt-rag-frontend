@@ -12,7 +12,7 @@ export function removeCitations(text: string): string {
     return newText;
   }
 
-export function parseAnswerToHtml(answer: string, showSources: boolean, onCitationClicked: (citationFilePath: string) => void): HtmlParsedAnswer {
+export function parseAnswerToHtml(answer: string, showSources: boolean, onCitationClicked: (citationFilePath: string, filename: string) => void): HtmlParsedAnswer {
     const citations: string[] = [];
     const followupQuestions: string[] = [];
     var answerHtml: string = "";  
@@ -44,7 +44,7 @@ export function parseAnswerToHtml(answer: string, showSources: boolean, onCitati
                 const path = getCitationFilePath(part);
     
                 return renderToStaticMarkup(
-                    <a className="supContainer" title={part} onClick={() => onCitationClicked(path)}>
+                    <a className="supContainer" title={part} onClick={() => onCitationClicked(path, part)}>
                         <sup>{citationIndex}</sup>
                     </a>
                 );
