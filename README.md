@@ -73,11 +73,11 @@ az webapp deploy --subscription [SUBSCRIPTION_ID] --resource-group [RESOURCE_GRO
 
 2) run ```azd auth login``` or ```az login```
 
-3) run ```./start.sh```
+3) run ```./start.sh```  or  ```./startwin.sh``` for windows
 
 ## Frontend customizations
 
-Optionally you can customize some itens in the frontend.
+Optionally you can customize some items in the frontend.
 
 **1) Title**
 

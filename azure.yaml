@@ -1,0 +1,32 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: azure-gpt-rag
+metadata:
+  template: azure-gpt-rag-frontend
+services:
+  frontend:
+    project: ./backend
+    language: python
+    host: appservice
+    hooks:
+      prepackage:
+        windows:
+          shell: pwsh
+          run:  cd ../frontend;npm install;npm run build
+          interactive: false
+          continueOnError: false
+        posix:
+          shell: sh
+          run:  cd ../frontend;npm install;npm run build
+          interactive: false
+          continueOnError: false
+# infrastructure is pulled from the main azure-gpt-rag repo with a hook.
+# If you previously provisioned infrastructure, use the same azd-env name, subscription and location to deploy data ingest to that infrastructure.        
+hooks:
+  preprovision:
+    posix:
+      run: scripts/preprovision.sh
+      interactive: true
+    windows:
+      run: scripts/preprovision.ps1
+      interactive: true
