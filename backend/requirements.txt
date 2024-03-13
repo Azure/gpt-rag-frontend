@@ -6,3 +6,4 @@ requests==2.28.2
 python-dotenv==1.0.0
 azure-identity
 azure-keyvault-secrets
+azure-storage-blob==12.19.0
