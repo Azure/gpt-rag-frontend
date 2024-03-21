@@ -33,9 +33,9 @@ export type TransactionData = {
     cuenta_origen: string;
     monto: string;
     telefono_destino: string;
-}
+};
 
-export type AskResponseGpt= {
+export type AskResponseGpt = {
     conversation_id: string;
     answer: string;
     current_state: string;
@@ -62,5 +62,5 @@ export type ChatRequestGpt = {
     conversation_id: string;
     query: string;
     overrides?: AskRequestOverrides;
+    useGPT4: boolean;
 };
-

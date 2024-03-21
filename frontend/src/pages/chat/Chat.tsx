@@ -14,6 +14,7 @@ import { ClearChatButton } from "../../components/ClearChatButton";
 import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
+import SwitchButton from "../../components/SwitchButton/SwitchButton";
 
 const userLanguage = navigator.language;
 let error_message_text = "";
@@ -76,7 +77,8 @@ const Chat = () => {
                     semanticRanker: useSemanticRanker,
                     semanticCaptions: useSemanticCaptions,
                     suggestFollowupQuestions: useSuggestFollowupQuestions
-                }
+                },
+                useGPT4: usesChatGPT4
             };
             const result = await chatApiGpt(request);
             console.log(result);
@@ -223,6 +225,11 @@ const Chat = () => {
         setSelectedAnswer(index);
     };
 
+    const [usesChatGPT4, setUsesChatGPT4] = useState(false);
+
+    const handleSwitchGPT = () => {
+        setUsesChatGPT4(!usesChatGPT4);
+    };
     // const onShowCitation = (citation: string, index: number) => {
     //     if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
     //         setActiveAnalysisPanelTab(undefined);
@@ -247,6 +254,7 @@ const Chat = () => {
     return (
         <div className={styles.container}>
             <div className={styles.commandsContainer}>
+                <SwitchButton useGPT4={usesChatGPT4} toggle={handleSwitchGPT} />
                 <ClearChatButton className={styles.commandButton} onClick={clearChat} disabled={!lastQuestionRef.current || isLoading} />
             </div>
             <div className={styles.chatRoot}>
