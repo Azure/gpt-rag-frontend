@@ -8,6 +8,16 @@ import { AskResponse, getCitationFilePath } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 
+const userLanguage = navigator.language;
+let citation_label_text = '';
+if (userLanguage.startsWith('pt')) {
+  citation_label_text = 'Fontes';
+} else if (userLanguage.startsWith('es')) {
+  citation_label_text = 'Fuentes';
+} else {
+  citation_label_text = 'Sources';
+}
+
 interface Props {
     answer: AskResponse;
     isSelected?: boolean;
@@ -75,7 +85,7 @@ export const Answer = ({
             {!!parsedAnswer.citations.length && showSources && (
                 <Stack.Item>
                     <Stack horizontal wrap tokens={{ childrenGap: 5 }}>
-                        <span className={styles.citationLearnMore}>Fuentes:</span>
+                        <span className={styles.citationLearnMore}>{citation_label_text}:</span>
                         {parsedAnswer.citations.map((x, i) => {
                             const path = getCitationFilePath(x);
                             return (
