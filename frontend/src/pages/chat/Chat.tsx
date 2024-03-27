@@ -150,7 +150,7 @@ const Chat = () => {
             return await response.blob();
         } catch (error) {
             console.error(error);
-            throw new Error("Error en la obtención del Archivo.");
+            throw new Error("Error fetching DOC.");
         }
     };
 
