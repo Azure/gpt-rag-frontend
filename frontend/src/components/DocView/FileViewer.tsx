@@ -5,7 +5,7 @@ import IMGViewer from "./IMGViewer";
 import PptxViewer from "./PPTXViewer";
 
 interface FileViewerProps {
-    file: string | Blob;
+    file: (string|Blob);
     fileType: string;
     page?: number;
 }
