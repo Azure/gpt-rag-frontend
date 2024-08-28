@@ -1,13 +1,10 @@
 import os
-import mimetypes
-import time
 import logging
 import requests
 import json
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from dotenv import load_dotenv
-from azure.keyvault.secrets import SecretClient
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
@@ -21,16 +18,11 @@ STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
 
-def get_secret(secretName):
-    keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
-    KVUri = f"https://{keyVaultName}.vault.azure.net"
+def get_managed_identity_token():
+    # Obtain the token using Managed Identity
     credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=KVUri, credential=credential)
-    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")   
-    retrieved_secret = client.get_secret(secretName)
-    return retrieved_secret.value
-
-SPEECH_KEY = get_secret('speechKey')
+    token = credential.get_token("https://management.azure.com/.default").token
+    return token
 
 SPEECH_RECOGNITION_LANGUAGE = os.getenv('SPEECH_RECOGNITION_LANGUAGE')
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv('SPEECH_SYNTHESIS_LANGUAGE')
@@ -56,13 +48,10 @@ def chatgpt():
     logging.info(f"[webbackend] User name: {client_principal_name}")
 
     try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = 'orchestrator-host--functionKey'
-        functionKey = get_secret(keySecretName)
+        token = get_managed_identity_token()
     except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
-        return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
+        logging.exception("[webbackend] Exception while obtaining the token with DefaultAzureCredential")
+        return jsonify({"error": "Failed to authenticate using Managed Identity."}), 500    
         
     try:
         url = ORCHESTRATOR_ENDPOINT
@@ -74,10 +63,10 @@ def chatgpt():
         })
         headers = {
             'Content-Type': 'application/json',
-            'x-functions-key': functionKey            
+            'Authorization': f'Bearer {token}'
         }
         response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")   
+        logging.info(f"[webbackend] response: {response.text[:500]}...") 
         return(response.text)
     except Exception as e:
         logging.exception("[webbackend] exception in /chatgpt")
@@ -89,9 +78,10 @@ def chatgpt():
 @app.route("/api/get-speech-token", methods=["GET"])
 def getGptSpeechToken():
     try:
+        token = get_managed_identity_token()
         fetch_token_url = f"https://{SPEECH_REGION}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
         headers = {
-            'Ocp-Apim-Subscription-Key': SPEECH_KEY,
+            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
         response = requests.post(fetch_token_url, headers=headers)
