@@ -17,7 +17,7 @@ Part of [GPT-RAG](https://github.com/Azure/gpt-rag)
 git clone https://github.com/Azure/gpt-rag-frontend.git
 ```
 
-If you plan to customize the ingestion logic, create a new repo by clicking on the Use **this template** button on top of this page.
+If you plan to customize the application code, create a new repo by clicking on the Use **this template** button on top of this page.
 
 If you created a new repository please update the repository URL before running the git clone command
 
