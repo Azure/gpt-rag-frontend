@@ -44,8 +44,16 @@ cd backend
 
 2.2. Remove backend_env if you have tested it locally
 
+bash:
 ```
 rm -rf backend_env  
+```
+
+or 
+
+Powershell:
+```
+Remove-Item -Recurse -Force backend_env
 ```
 
 2.3. Zip source code
