@@ -10,7 +10,6 @@ Part of [GPT-RAG](https://github.com/Azure/gpt-rag)
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Node.js 16+ [windows/mac](https://nodejs.dev/en/download/)  [linux/wsl](https://nodejs.dev/en/download/package-manager/)
 - Install ZIP in WSL/Linux: sudo apt-get install zip
-- Install ZIP in Windows powershell: choco install zip
 
 **1) Clone the Repository**
 
