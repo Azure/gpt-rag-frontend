@@ -13,7 +13,6 @@ load_dotenv()
 
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
-ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI')
 STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
@@ -65,6 +64,7 @@ def chatgpt():
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {token}'
         }
+        logging.info(f"[webbackend] calling orchestrator at: {ORCHESTRATOR_ENDPOINT}")        
         response = requests.request("GET", url, headers=headers, data=payload)
         logging.info(f"[webbackend] response: {response.text[:500]}...") 
         return(response.text)
