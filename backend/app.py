@@ -30,23 +30,26 @@ def get_function_key():
     function_app_name = os.getenv('AZURE_ORCHESTRATOR_FUNC_NAME')
     token = get_managed_identity_token()
     logging.info(f"[webbackend] Obtaining function key.")
-    requestUrl = f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/Microsoft.Web/sites/{function_app_name}/functions/orc/keys/mykey?api-version=2022-03-01"
+    
+    # URL to get all function keys, including the default one
+    requestUrl = f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/Microsoft.Web/sites/{function_app_name}/functions/orc/listKeys?api-version=2022-03-01"
+    
     requestHeaders = {
         "Authorization": f"Bearer {token}" ,
         "Content-Type": "application/json"
     }
-    data = {
-        'properties': {}
-    }
-    response = requests.put(requestUrl, headers=requestHeaders, data=json.dumps(data))
+    
+    response = requests.post(requestUrl, headers=requestHeaders)
     response_json = json.loads(response.content.decode('utf-8'))
+    
     try:
-        function_key = response_json['properties']['value']
-    except Exception as e:
+        # Assuming you want to get the 'default' key
+        function_key = response_json['default']
+    except KeyError as e:
         function_key = None
-        logging.error(f"[webbackend] Error when getting function key. Details: {str(e)}.")        
+        logging.error(f"[webbackend] Error when getting function key. Details: {str(e)}.")
+    
     return function_key
-
 
 SPEECH_RECOGNITION_LANGUAGE = os.getenv('SPEECH_RECOGNITION_LANGUAGE')
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv('SPEECH_SYNTHESIS_LANGUAGE')
