@@ -288,7 +288,12 @@ const Chat = () => {
                                 <>
                                     <UserChatMessage message={lastQuestionRef.current} />
                                     <div className={styles.chatMessageGptMinWidth}>
-                                        <AnswerError error={error_message_text + error.toString()} onRetry={() => makeApiRequestGpt(lastQuestionRef.current)} />
+                                        <AnswerError 
+                                            error={error.toString() === "SyntaxError: Unexpected end of JSON input" 
+                                                ? error_message_text + "Error: Orchestrator call failed or did not return a valid response." 
+                                                : error_message_text + error.toString()} 
+                                            onRetry={() => makeApiRequestGpt(lastQuestionRef.current)} 
+                                        />
                                     </div>
                                 </>
                             ) : null}
