@@ -1,14 +1,15 @@
-import os
-import logging
-import requests
 import json
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
-from dotenv import load_dotenv
+import logging
+import os
+import time
+from urllib.parse import unquote, urlparse
+
+import requests
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
-from urllib.parse import unquote
-from urllib.parse import urlparse
+from dotenv import load_dotenv
+from flask import Flask, Response, jsonify, request
+from flask_cors import CORS
 
 load_dotenv()
 
@@ -65,6 +66,7 @@ def static_file(path):
 
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
+    start_time = time.time()  # Start the timer    
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
@@ -95,7 +97,10 @@ def chatgpt():
     except Exception as e:
         logging.exception("[webbackend] exception in /chatgpt")
         return jsonify({"error": str(e)}), 500
-    
+    finally:
+        end_time = time.time()  # End the timer
+        duration = end_time - start_time
+        logging.info(f"[webbackend] Finished processing in {duration:.2f} seconds")    
 
 # methods to provide access to speech services and blob storage account blobs
 
