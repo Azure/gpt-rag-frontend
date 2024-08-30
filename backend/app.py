@@ -24,6 +24,30 @@ def get_managed_identity_token():
     token = credential.get_token("https://management.azure.com/.default").token
     return token
 
+def get_function_key():
+    subscription_id = os.getenv('AZURE_SUBSCRIPTION_ID')
+    resource_group = os.getenv('AZURE_RESOURCE_GROUP_NAME')
+    function_app_name = os.getenv('AZURE_ORCHESTRATOR_FUNC_NAME')
+    token = get_managed_identity_token()
+    logging.info(f"[webbackend] Obtaining function key.")
+    requestUrl = f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/Microsoft.Web/sites/{function_app_name}/functions/orc/keys/mykey?api-version=2022-03-01"
+    requestHeaders = {
+        "Authorization": f"Bearer {token}" ,
+        "Content-Type": "application/json"
+    }
+    data = {
+        'properties': {}
+    }
+    response = requests.put(requestUrl, headers=requestHeaders, data=json.dumps(data))
+    response_json = json.loads(response.content.decode('utf-8'))
+    try:
+        function_key = response_json['properties']['value']
+    except Exception as e:
+        function_key = None
+        logging.error(f"[webbackend] Error when getting function key. Details: {str(e)}.")        
+    return function_key
+
+
 SPEECH_RECOGNITION_LANGUAGE = os.getenv('SPEECH_RECOGNITION_LANGUAGE')
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv('SPEECH_SYNTHESIS_LANGUAGE')
 SPEECH_SYNTHESIS_VOICE_NAME = os.getenv('SPEECH_SYNTHESIS_VOICE_NAME')
@@ -47,24 +71,10 @@ def chatgpt():
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
 
-    try:
-        token = get_managed_identity_token()
-    except Exception as e:
-        logging.exception("[webbackend] Exception while obtaining the token with DefaultAzureCredential")
-        return jsonify({"error": "Failed to authenticate using Managed Identity."}), 500    
+    function_key = get_function_key()
         
     try:
         url = ORCHESTRATOR_ENDPOINT
-        credential = DefaultAzureCredential()
-
-        # Parse the orchestrator domain from the ORCHESTRATOR_ENDPOINT
-        parsed_url = urlparse(ORCHESTRATOR_ENDPOINT)
-        orchestrator_domain = parsed_url.netloc
-        logging.info(f"[webbackend] orchestrator_domain is : {orchestrator_domain}")  
-
-        # Get the token for the orchestrator domain
-        token = credential.get_token(f"https://{orchestrator_domain}/.default").token
-
         payload = json.dumps({
             "conversation_id": conversation_id,
             "question": question,
@@ -73,11 +83,11 @@ def chatgpt():
         })
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {token}'
+            'x-functions-key': function_key  
         }
         logging.info(f"[webbackend] calling orchestrator at: {ORCHESTRATOR_ENDPOINT}")        
         response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...") 
+        logging.info(f"[webbackend] response: {response.text[:100]}...") 
         return(response.text)
     except Exception as e:
         logging.exception("[webbackend] exception in /chatgpt")
