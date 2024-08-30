@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
 from urllib.parse import unquote
+from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -54,6 +55,16 @@ def chatgpt():
         
     try:
         url = ORCHESTRATOR_ENDPOINT
+        credential = DefaultAzureCredential()
+
+        # Parse the orchestrator domain from the ORCHESTRATOR_ENDPOINT
+        parsed_url = urlparse(ORCHESTRATOR_ENDPOINT)
+        orchestrator_domain = parsed_url.netloc
+        logging.info(f"[webbackend] orchestrator_domain is : {orchestrator_domain}")  
+
+        # Get the token for the orchestrator domain
+        token = credential.get_token(f"https://{orchestrator_domain}/.default").token
+
         payload = json.dumps({
             "conversation_id": conversation_id,
             "question": question,
