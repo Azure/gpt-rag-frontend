@@ -1,36 +1,56 @@
-import os
-import mimetypes
-import time
-import logging
-import requests
 import json
-from flask import Flask, request, jsonify, Response
-from flask_cors import CORS
-from dotenv import load_dotenv
-from azure.keyvault.secrets import SecretClient
+import logging
+import os
+import time
+from urllib.parse import unquote, urlparse
+
+import requests
 from azure.identity import DefaultAzureCredential
 from azure.storage.blob import BlobServiceClient
-from urllib.parse import unquote
+from dotenv import load_dotenv
+from flask import Flask, Response, jsonify, request
+from flask_cors import CORS
 
 load_dotenv()
 
 SPEECH_REGION = os.getenv('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = os.getenv('ORCHESTRATOR_ENDPOINT')
-ORCHESTRATOR_URI = os.getenv('ORCHESTRATOR_URI')
 STORAGE_ACCOUNT = os.getenv('STORAGE_ACCOUNT')
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
 
-def get_secret(secretName):
-    keyVaultName = os.environ["AZURE_KEY_VAULT_NAME"]
-    KVUri = f"https://{keyVaultName}.vault.azure.net"
+def get_managed_identity_token():
+    # Obtain the token using Managed Identity
     credential = DefaultAzureCredential()
-    client = SecretClient(vault_url=KVUri, credential=credential)
-    logging.info(f"[webbackend] retrieving {secretName} secret from {keyVaultName}.")   
-    retrieved_secret = client.get_secret(secretName)
-    return retrieved_secret.value
+    token = credential.get_token("https://management.azure.com/.default").token
+    return token
 
-SPEECH_KEY = get_secret('speechKey')
+def get_function_key():
+    subscription_id = os.getenv('AZURE_SUBSCRIPTION_ID')
+    resource_group = os.getenv('AZURE_RESOURCE_GROUP_NAME')
+    function_app_name = os.getenv('AZURE_ORCHESTRATOR_FUNC_NAME')
+    token = get_managed_identity_token()
+    logging.info(f"[webbackend] Obtaining function key.")
+    
+    # URL to get all function keys, including the default one
+    requestUrl = f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups/{resource_group}/providers/Microsoft.Web/sites/{function_app_name}/functions/orc/listKeys?api-version=2022-03-01"
+    
+    requestHeaders = {
+        "Authorization": f"Bearer {token}" ,
+        "Content-Type": "application/json"
+    }
+    
+    response = requests.post(requestUrl, headers=requestHeaders)
+    response_json = json.loads(response.content.decode('utf-8'))
+    
+    try:
+        # Assuming you want to get the 'default' key
+        function_key = response_json['default']
+    except KeyError as e:
+        function_key = None
+        logging.error(f"[webbackend] Error when getting function key. Details: {str(e)}.")
+    
+    return function_key
 
 SPEECH_RECOGNITION_LANGUAGE = os.getenv('SPEECH_RECOGNITION_LANGUAGE')
 SPEECH_SYNTHESIS_LANGUAGE = os.getenv('SPEECH_SYNTHESIS_LANGUAGE')
@@ -46,6 +66,7 @@ def static_file(path):
 
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
+    start_time = time.time()  # Start the timer    
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
     client_principal_id = request.headers.get('X-MS-CLIENT-PRINCIPAL-ID')
@@ -55,14 +76,7 @@ def chatgpt():
     logging.info(f"[webbackend] User principal: {client_principal_id}")
     logging.info(f"[webbackend] User name: {client_principal_name}")
 
-    try:
-        # keySecretName is the name of the secret in Azure Key Vault which holds the key for the orchestrator function
-        # It is set during the infrastructure deployment.
-        keySecretName = 'orchestrator-host--functionKey'
-        functionKey = get_secret(keySecretName)
-    except Exception as e:
-        logging.exception("[webbackend] exception in /api/orchestrator-host--functionKey")
-        return jsonify({"error": f"Check orchestrator's function key was generated in Azure Portal and try again. ({keySecretName} not found in key vault)"}), 500
+    function_key = get_function_key()
         
     try:
         url = ORCHESTRATOR_ENDPOINT
@@ -74,24 +88,29 @@ def chatgpt():
         })
         headers = {
             'Content-Type': 'application/json',
-            'x-functions-key': functionKey            
+            'x-functions-key': function_key  
         }
+        logging.info(f"[webbackend] calling orchestrator at: {ORCHESTRATOR_ENDPOINT}")        
         response = requests.request("GET", url, headers=headers, data=payload)
-        logging.info(f"[webbackend] response: {response.text[:500]}...")   
+        logging.info(f"[webbackend] response: {response.text[:100]}...") 
         return(response.text)
     except Exception as e:
         logging.exception("[webbackend] exception in /chatgpt")
         return jsonify({"error": str(e)}), 500
-    
+    finally:
+        end_time = time.time()  # End the timer
+        duration = end_time - start_time
+        logging.info(f"[webbackend] Finished processing in {duration:.2f} seconds")    
 
 # methods to provide access to speech services and blob storage account blobs
 
 @app.route("/api/get-speech-token", methods=["GET"])
 def getGptSpeechToken():
     try:
+        token = get_managed_identity_token()
         fetch_token_url = f"https://{SPEECH_REGION}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
         headers = {
-            'Ocp-Apim-Subscription-Key': SPEECH_KEY,
+            'Authorization': f'Bearer {token}',
             'Content-Type': 'application/x-www-form-urlencoded'
         }
         response = requests.post(fetch_token_url, headers=headers)
