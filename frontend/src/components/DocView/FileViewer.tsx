@@ -12,7 +12,7 @@ interface FileViewerProps {
 
 const FileViewer: React.ComponentType<FileViewerProps> = ({ file, fileType, page }) => {
     console.log("Filetipe", fileType);
-    let ViewerComponent: React.ComponentType<any> = () => <div>No hay visor disponible para este tipo de archivo.</div>;
+    let ViewerComponent: React.ComponentType<any> = () => <div>There is no viewer available for this type of file.</div>;
 
     let componentProps = { file, fileType, page };
 
