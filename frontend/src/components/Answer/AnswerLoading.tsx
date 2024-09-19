@@ -4,15 +4,9 @@ import { animated, useSpring } from "@react-spring/web";
 import styles from "./Answer.module.css";
 import { AnswerIcon } from "./AnswerIcon";
 
-const userLanguage = navigator.language;
-let generating_answer_text = '';
-if (userLanguage.startsWith('pt')) {
-  generating_answer_text = 'Gerando resposta';
-} else if (userLanguage.startsWith('es')) {
-  generating_answer_text = 'Generando respuesta';
-} else {
-  generating_answer_text = 'Generating response';
-}
+import { getLanguageText } from '../../utils/languageUtils'; 
+
+const generating_answer_text = getLanguageText('generatingResponse');
 
 export const AnswerLoading = () => {
     const animatedStyles = useSpring({

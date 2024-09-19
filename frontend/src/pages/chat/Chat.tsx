@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton } from "@fluentui/react";
 import { SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
+import { getLanguageText } from '../../utils/languageUtils'; 
 
 import styles from "./Chat.module.css";
 
@@ -15,15 +16,7 @@ import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 
-const userLanguage = navigator.language;
-let error_message_text = "";
-if (userLanguage.startsWith("pt")) {
-    error_message_text = "Desculpe, tive um problema técnico com a solicitação. Por favor informar o erro a equipe de suporte. ";
-} else if (userLanguage.startsWith("es")) {
-    error_message_text = "Lo siento, yo tuve un problema con la solicitud. Por favor informe el error al equipo de soporte. ";
-} else {
-    error_message_text = "I'm sorry, I had a problem with the request. Please report the error to the support team. ";
-}
+const error_message_text = getLanguageText('errorMessage');
 
 const Chat = () => {
     // speech synthesis is disabled by default
@@ -125,7 +118,6 @@ const Chat = () => {
     };
 
     const clearChat = () => {
-        console.log("file is" + fileType);
         lastQuestionRef.current = "";
         error && setError(undefined);
         setActiveCitation(undefined);
@@ -154,16 +146,7 @@ const Chat = () => {
     
             if (!response.ok) {
                 // Create a dummy blob with an error message
-                const dummyContent = `
-                    <html>
-                        <head>
-                            <title>Download Error</title>
-                        </head>
-                        <body>
-                            <h1>It was not possible to download the document: ${documentName}</h1>
-                        </body>
-                    </html>
-                `;
+                const dummyContent = `Download Error: It was not possible to download the document: ${documentName}`;
                 const dummyBlob = new Blob([dummyContent], { type: "text/html" });
                 console.log('Error fetching DOC: ${response.status}');
                 return dummyBlob;
@@ -172,6 +155,7 @@ const Chat = () => {
             return await response.blob();
         } catch (error) {
             console.error(error);
+            console.log("Error details:", error);
             throw new Error("Error fetching DOC.");
         }
     };
@@ -287,8 +271,6 @@ const Chat = () => {
                 <div className={styles.chatContainer}>
                     {!lastQuestionRef.current ? (
                         <div className={styles.chatEmptyState}>
-                            {/*<SparkleFilled fontSize={"120px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Chat logo" />
-                            <h1 className={styles.chatEmptyStateTitle}>Conversación con datos</h1>*/}
                         </div>
                     ) : (
                         <div className={styles.chatMessageStream}>
@@ -349,7 +331,7 @@ const Chat = () => {
                         citationHeight="810px"
                         answer={answers[selectedAnswer][1]}
                         fileType={fileType}
-                        fileName={fileName} // Add this line
+                        fileName={fileName} 
                     />
 
                 )}
