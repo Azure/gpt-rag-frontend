@@ -63,8 +63,11 @@ export const Answer = ({
                             iconProps={{ iconName: "Lightbulb" }}
                             title="Show thought process"
                             ariaLabel="Show thought process"
-                            onClick={() => onThoughtProcessClicked()}
-                            disabled={!answer.thoughts}
+                            onClick={() => {
+                                console.log('Thought process button clicked');
+                                onThoughtProcessClicked();
+                            }}
+                            disabled={false} 
                         />
                         {/* <IconButton
                             style={{ color: "black" }}
