@@ -3,6 +3,7 @@ import { Stack, TextField } from "@fluentui/react";
 import { getTokenOrRefresh } from './token_util';
 import { Send28Filled, BookOpenMicrophone28Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from 'microsoft-cognitiveservices-speech-sdk';
+import { getLanguageText } from '../../utils/languageUtils'; 
 
 import styles from "./QuestionInput.module.css";
 interface Props {
@@ -35,15 +36,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         const audioConfig = AudioConfig.fromDefaultMicrophoneInput();
         const recognizer = new SpeechRecognizer(speechConfig, audioConfig);
 
-        const userLanguage = navigator.language;
-        let reiniciar_text = '';
-        if (userLanguage.startsWith('pt')) {
-          reiniciar_text = 'Pode falar usando seu microfone...';
-        } else if (userLanguage.startsWith('es')) {
-          reiniciar_text = 'Puedes hablar usando su micrófono...';
-        } else {
-          reiniciar_text = 'You can talk using your microphone...';
-        }
+        const reiniciar_text = getLanguageText('micPrompt');
 
         setQuestion(reiniciar_text);
 
@@ -51,11 +44,8 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
             let displayText;
             if (result.reason === ResultReason.RecognizedSpeech) {
                 displayText = result.text;
-                //setQuestion(displayText);
-                //onSend(question);
             } else {
                 displayText = 'ERROR: Voice recognition was canceled or the voice cannot be recognized. Make sure your microphone is working properly.';
-                //setQuestion(displayText);
             }
             setQuestion(displayText);
         });
@@ -93,14 +83,14 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
             <div className={styles.questionInputButtonsContainer}>
                 <div
                     className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
-                    aria-label="Boton hacer preguntas"
+                    aria-label="Ask Questions"
                     onClick={sendQuestion}
                 >
                     <Send28Filled primaryFill="rgba(115, 118, 225, 1)" />
                 </div>
                 <div
                     className={`${styles.questionInputSendButton}}`}
-                    aria-label="Boton hablar"
+                    aria-label="Talk"
                     onClick={sttFromMic}
                 >
                     <SlideMicrophone32Filled primaryFill="rgba(115, 118, 225, 1)" />

@@ -5,9 +5,10 @@ interface LazyDocViewerProps {
     base64Doc: string | undefined;
     page?: number | undefined;
     fileType: string;
+    fileName?: string;
 }
 
-const DocView: React.FC<LazyDocViewerProps> = ({ base64Doc, page, fileType }) => {
+const DocView: React.FC<LazyDocViewerProps> = ({ base64Doc, page, fileType, fileName }) => {
     const [currentPage, setCurrentPage] = useState<number | undefined>(page);
 
     useEffect(() => {
@@ -37,10 +38,10 @@ const DocView: React.FC<LazyDocViewerProps> = ({ base64Doc, page, fileType }) =>
         <div>
             {base64Doc ? (
                 <>
-                    <FileViewer file={blob} fileType={fileType} page={currentPage} />
+                    <FileViewer file={blob} fileType={fileType} page={currentPage} fileName={fileName} />
                 </>
             ) : (
-                <div>Cargando Documento...</div>
+                <div>Loading Document...</div>
             )}
         </div>
     );

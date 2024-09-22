@@ -8,15 +8,10 @@ import { AskResponse, getCitationFilePath } from "../../api";
 import { parseAnswerToHtml } from "./AnswerParser";
 import { AnswerIcon } from "./AnswerIcon";
 
-const userLanguage = navigator.language;
-let citation_label_text = '';
-if (userLanguage.startsWith('pt')) {
-  citation_label_text = 'Fontes';
-} else if (userLanguage.startsWith('es')) {
-  citation_label_text = 'Fuentes';
-} else {
-  citation_label_text = 'Sources';
-}
+import { getLanguageText } from '../../utils/languageUtils'; 
+
+const citation_label_text = getLanguageText('citationLabel');
+
 
 interface Props {
     answer: AskResponse;
@@ -63,17 +58,12 @@ export const Answer = ({
                             iconProps={{ iconName: "Lightbulb" }}
                             title="Show thought process"
                             ariaLabel="Show thought process"
-                            onClick={() => onThoughtProcessClicked()}
-                            disabled={!answer.thoughts}
+                            onClick={() => {
+                                console.log('Thought process button clicked');
+                                onThoughtProcessClicked();
+                            }}
+                            disabled={false} 
                         />
-                        {/* <IconButton
-                            style={{ color: "black" }}
-                            iconProps={{ iconName: "ClipboardList" }}
-                            title="Show supporting content"
-                            ariaLabel="Show supporting content"
-                            onClick={() => onSupportingContentClicked()}
-                            disabled={!answer.data_points.length}
-                        /> */}
                     </div>
                 </Stack>
             </Stack.Item>

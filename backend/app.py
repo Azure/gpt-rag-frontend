@@ -132,8 +132,8 @@ def getStorageAccount():
 
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
-    logging.exception ("------------------ENTRA ------------")
     blob_name = unquote(request.json["blob_name"])
+    logging.info(f"Starting getBlob function for blob: {blob_name}")
     try:
         client_credential = DefaultAzureCredential()
         blob_service_client = BlobServiceClient(
@@ -143,6 +143,7 @@ def getBlob():
         blob_client = blob_service_client.get_blob_client(container='documents', blob=blob_name)
         blob_data = blob_client.download_blob()
         blob_text = blob_data.readall()
+        logging.info(f"Successfully fetched blob: {blob_name}")
         return Response(blob_text, content_type='application/octet-stream')
     except Exception as e:
         logging.exception("[webbackend] exception in /api/get-blob")
