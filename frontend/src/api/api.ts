@@ -49,7 +49,7 @@ export function getCitationFilePath(citation: string): string {
         const parsedResponse = JSON.parse(xhr.responseText);
         storage_account = parsedResponse['storageaccount'];
     }
-    console.log('storage account:' + storage_account);
-
+    const file_path = `https://${storage_account}.blob.core.windows.net/documents/${citation}`
+    console.log('Citation file path:' + file_path);
     return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
 }
