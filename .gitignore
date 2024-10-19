@@ -4,8 +4,9 @@
 local/
 notes.txt
 deploy.zip
+deploy.env
 .vscode/
-
+.env 
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
