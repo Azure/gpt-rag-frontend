@@ -30,6 +30,7 @@ LOGLEVEL = read_env_variable('LOGLEVEL', 'INFO').upper()
 
 ALLOWED_GROUP_NAMES = read_env_list('ALLOWED_GROUP_NAMES')
 ALLOWED_USER_PRINCIPALS = read_env_list('ALLOWED_USER_PRINCIPALS')
+ALLOWED_USER_NAMES = read_env_list('ALLOWED_USER_NAMES')
 
 SPEECH_RECOGNITION_LANGUAGE = read_env_variable('SPEECH_RECOGNITION_LANGUAGE')
 SPEECH_SYNTHESIS_LANGUAGE = read_env_variable('SPEECH_SYNTHESIS_LANGUAGE')
@@ -110,12 +111,15 @@ def check_authorization(request):
     # Log the ALLOWED_GROUPS and ALLOWED_USERS for debugging
     logging.info(f"[webbackend] Allowed user groups: {'any' if not ALLOWED_GROUP_NAMES else ALLOWED_GROUP_NAMES}")
     logging.info(f"[webbackend] Allowed user principals: {'any' if not ALLOWED_USER_PRINCIPALS else ALLOWED_USER_PRINCIPALS}")
+    logging.info(f"[webbackend] Allowed user names: {'any' if not ALLOWED_USER_NAMES else ALLOWED_USER_NAMES}")
     
     # Check authorization
     authorized = True
-    if ALLOWED_GROUP_NAMES or ALLOWED_USER_PRINCIPALS:
+    if ALLOWED_GROUP_NAMES or ALLOWED_USER_PRINCIPALS or ALLOWED_USER_NAMES:
         authorized = False
-        if client_principal_name in ALLOWED_USER_PRINCIPALS:
+        if client_principal_name in ALLOWED_USER_NAMES:
+            authorized = True
+        elif client_principal_id in ALLOWED_USER_PRINCIPALS:
             authorized = True
         elif any(group in ALLOWED_GROUP_NAMES for group in groups):
             authorized = True
