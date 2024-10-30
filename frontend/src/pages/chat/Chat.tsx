@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { Checkbox, Panel, DefaultButton, TextField, SpinButton } from "@fluentui/react";
 import { SparkleFilled, TabDesktopMultipleBottomRegular } from "@fluentui/react-icons";
+import { getLanguageText } from '../../utils/languageUtils'; 
 
 import styles from "./Chat.module.css";
 
@@ -15,20 +16,13 @@ import { getTokenOrRefresh } from "../../components/QuestionInput/token_util";
 import { SpeechConfig, AudioConfig, SpeechSynthesizer, ResultReason } from "microsoft-cognitiveservices-speech-sdk";
 import { getFileType } from "../../utils/functions";
 
-const userLanguage = navigator.language;
-let error_message_text = "";
-if (userLanguage.startsWith("pt")) {
-    error_message_text = "Desculpe, tive um problema técnico com a solicitação. Por favor informar o erro a equipe de suporte. ";
-} else if (userLanguage.startsWith("es")) {
-    error_message_text = "Lo siento, yo tuve un problema con la solicitud. Por favor informe el error al equipo de soporte. ";
-} else {
-    error_message_text = "I'm sorry, I had a problem with the request. Please report the error to the support team. ";
-}
+const error_message_text = getLanguageText('errorMessage');
 
 const Chat = () => {
     // speech synthesis is disabled by default
     const speechSynthesisEnabled = false;
 
+    const [fileName, setFileName] = useState<string>("");
     const [placeholderText, setPlaceholderText] = useState("");
     const [isConfigPanelOpen, setIsConfigPanelOpen] = useState(false);
     const [promptTemplate, setPromptTemplate] = useState<string>("");
@@ -40,7 +34,7 @@ const Chat = () => {
 
     const lastQuestionRef = useRef<string>("");
     const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null);
-    const [fileType, setFileType] = useState<string>("");
+    const [fileType, setFileType] = useState<string>("txt");
 
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<unknown>();
@@ -53,6 +47,7 @@ const Chat = () => {
 
     const [userId, setUserId] = useState<string>("");
     const triggered = useRef(false);
+
 
     const makeApiRequestGpt = async (question: string) => {
         lastQuestionRef.current = question;
@@ -81,6 +76,12 @@ const Chat = () => {
             const result = await chatApiGpt(request);
             console.log(result);
             console.log(result.answer);
+            
+            // Check if result.thoughts exists
+            if (!result.thoughts) {
+                result.thoughts = "No thought process available.";
+            }
+
             setAnswers([...answers, [question, result]]);
             setUserId(result.conversation_id);
 
@@ -117,7 +118,6 @@ const Chat = () => {
     };
 
     const clearChat = () => {
-        console.log("file is" + fileType);
         lastQuestionRef.current = "";
         error && setError(undefined);
         setActiveCitation(undefined);
@@ -126,10 +126,11 @@ const Chat = () => {
         setUserId("");
     };
 
-    /**Get Pdf */
-    const getPdf = async (pdfName: string) => {
+    /**Get Document */
+    const getDocument = async (documentName: string) => {
         /** get file type */
-        let type = getFileType(pdfName);
+        console.log(`Get document: ${documentName}`);
+        let type = getFileType(documentName);
         setFileType(type);
 
         try {
@@ -139,26 +140,31 @@ const Chat = () => {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    blob_name: pdfName
+                    blob_name: documentName
                 })
             });
-
+    
             if (!response.ok) {
-                throw new Error(`Error fetching DOC: ${response.status}`);
+                // Create a dummy blob with an error message
+                const dummyContent = `Download Error: It was not possible to download the document: ${documentName}`;
+                const dummyBlob = new Blob([dummyContent], { type: "text/html" });
+                console.log('Error fetching DOC: ${response.status}');
+                return dummyBlob;
             }
-
+    
             return await response.blob();
         } catch (error) {
             console.error(error);
+            console.log("Error details:", error);
             throw new Error("Error fetching DOC.");
         }
     };
+    
 
     useEffect(() => {
         chatMessageStreamEnd.current?.scrollIntoView({ behavior: "smooth" });
         if (triggered.current === false) {
             triggered.current = true;
-            console.log(triggered.current);
         }
         const language = navigator.language;
         if (language.startsWith("pt")) {
@@ -200,41 +206,40 @@ const Chat = () => {
     };
 
     const onShowCitation = async (citation: string, fileName: string, index: number) => {
-        const response = await getPdf(fileName);
-        if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
-            setActiveAnalysisPanelTab(undefined);
-        } else {
-            //var file = new Blob([response as BlobPart], { type: "application/pdf" });
-            var file = new Blob([response as BlobPart]);
-
-            readFile(file);
-
-            function readFile(input: Blob) {
-                const fr = new FileReader();
-                fr.readAsDataURL(input);
-                fr.onload = function (event) {
-                    const res: any = event.target ? event.target.result : undefined;
-                    setActiveCitation(res);
-                };
+        try {
+            // Get the document blob
+            const response = await getDocument(fileName);
+            // Determine file type from file name
+            let type = getFileType(fileName);
+            // Set file type and file name in state
+            setFileType(type);
+            setFileName(fileName);
+    
+            if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
+                setActiveAnalysisPanelTab(undefined);
+            } else {
+                readFile(response);
+    
+                function readFile(input: Blob) {
+                    const fr = new FileReader();
+                    fr.readAsDataURL(input);
+                    fr.onload = function (event) {
+                        const res: any = event.target ? event.target.result : undefined;
+                        setActiveCitation(res);
+                    };
+                }
+                setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
             }
-            setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
+            setSelectedAnswer(index);
+        } catch (e) {
+            console.error('Error fetching document:', e);
         }
-
-        setSelectedAnswer(index);
     };
-
-    // const onShowCitation = (citation: string, index: number) => {
-    //     if (activeCitation === citation && activeAnalysisPanelTab === AnalysisPanelTabs.CitationTab && selectedAnswer === index) {
-    //         setActiveAnalysisPanelTab(undefined);
-    //     } else {
-    //         setActiveCitation(citation);
-    //         setActiveAnalysisPanelTab(AnalysisPanelTabs.CitationTab);
-    //     }
-
-    //     setSelectedAnswer(index);
-    // };
+    
 
     const onToggleTab = (tab: AnalysisPanelTabs, index: number) => {
+        console.log("onToggleTab called with tab:", tab, "index:", index);
+        console.log("Tab clicked:", tab);        
         if (activeAnalysisPanelTab === tab && selectedAnswer === index) {
             setActiveAnalysisPanelTab(undefined);
         } else {
@@ -243,6 +248,19 @@ const Chat = () => {
 
         setSelectedAnswer(index);
     };
+
+    // Add or update the onThoughtProcessClicked function
+    const onThoughtProcessClicked = (index: number) => {
+        console.log('onThoughtProcessClicked called with index:', index);
+        if (activeAnalysisPanelTab === AnalysisPanelTabs.ThoughtProcessTab && selectedAnswer === index) {
+            setActiveAnalysisPanelTab(undefined);
+        } else {
+            setActiveAnalysisPanelTab(AnalysisPanelTabs.ThoughtProcessTab);
+        }
+        setSelectedAnswer(index);
+        console.log('activeAnalysisPanelTab is now:', activeAnalysisPanelTab);
+    };
+    
 
     return (
         <div className={styles.container}>
@@ -253,30 +271,28 @@ const Chat = () => {
                 <div className={styles.chatContainer}>
                     {!lastQuestionRef.current ? (
                         <div className={styles.chatEmptyState}>
-                            {/*<SparkleFilled fontSize={"120px"} primaryFill={"rgba(115, 118, 225, 1)"} aria-hidden="true" aria-label="Chat logo" />
-                            <h1 className={styles.chatEmptyStateTitle}>Conversación con datos</h1>*/}
                         </div>
                     ) : (
                         <div className={styles.chatMessageStream}>
-                            {answers.map((answer, index) => (
-                                <div key={index}>
-                                    <UserChatMessage message={answer[0]} />
-                                    <div className={styles.chatMessageGpt}>
-                                        <Answer
-                                            key={index}
-                                            answer={answer[1]}
-                                            isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
-                                            onCitationClicked={(c, n) => onShowCitation(c, n, index)}
-                                            onThoughtProcessClicked={() => onToggleTab(AnalysisPanelTabs.ThoughtProcessTab, index)}
-                                            onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
-                                            onFollowupQuestionClicked={q => makeApiRequestGpt(q)}
-                                            showFollowupQuestions={false}
-                                            showSources={true}
-                                        />
+                                {answers.map((answer, index) => (
+                                    <div key={index}>
+                                        <UserChatMessage message={answer[0]} />
+                                        <div className={styles.chatMessageGpt}>
+                                            <Answer
+                                                key={index}
+                                                answer={answer[1]}
+                                                isSelected={selectedAnswer === index && activeAnalysisPanelTab !== undefined}
+                                                onCitationClicked={(c, n) => onShowCitation(c, n, index)}
+                                                onThoughtProcessClicked={() => onThoughtProcessClicked(index)}
+                                                onSupportingContentClicked={() => onToggleTab(AnalysisPanelTabs.SupportingContentTab, index)}
+                                                onFollowupQuestionClicked={q => makeApiRequestGpt(q)}
+                                                showFollowupQuestions={false}
+                                                showSources={true}
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                            {isLoading && (
+                                ))}
+                                {isLoading && (
                                 <>
                                     <UserChatMessage message={lastQuestionRef.current} />
                                     <div className={styles.chatMessageGptMinWidth}>
@@ -306,16 +322,18 @@ const Chat = () => {
                     </div>
                 </div>
 
-                {answers.length > 0 && fileType !== "" && activeAnalysisPanelTab && (
+                {answers.length > 0 && (
                     <AnalysisPanel
+                        activeTab={activeAnalysisPanelTab as AnalysisPanelTabs}
                         className={styles.chatAnalysisPanel}
                         activeCitation={activeCitation}
                         onActiveTabChanged={x => onToggleTab(x, selectedAnswer)}
                         citationHeight="810px"
                         answer={answers[selectedAnswer][1]}
-                        activeTab={activeAnalysisPanelTab}
                         fileType={fileType}
+                        fileName={fileName} 
                     />
+
                 )}
 
                 <Panel

@@ -75,13 +75,57 @@ cd ..
 az webapp deploy --subscription [SUBSCRIPTION_ID] --resource-group [RESOURCE_GROUP_NAME] --name [WEB_APP_NAME] --src-path deploy.zip --type zip --async true
 ```
 
-## **(Optional) Test locally** 
+## **(Optional) Test locally**  
 
-1) rename ```.env.template``` to ```.env``` updating the variables accordingly.
+Before running the application locally, make sure that the necessary Azure resources (like Blob Storage, AI services, and the Orchestrator) are already deployed in the cloud. Don’t worry—this can easily be done using `azd provision`, as outlined in the setup guide for the GPT-RAG repository.
 
-2) run ```azd auth login``` or ```az login```
+1) Rename `.env.template` to `.env` and update the environment variables with your details.
 
-3) run ```./start.sh```  or  ```./startwin.sh``` for windows
+2) Log in to your Azure account by running `azd auth login` or `az login`.
+
+3) Start the application by running `./start.sh` (or `./startwin.sh` if you’re on Windows).
+
+### Permissions for your user to run the frontend app locally
+
+Assign the necessary permissions to the user who will run the frontend application locally. Below are the specific roles and the corresponding commands.
+
+Replace the variables (those starting with the $ symbol) with the corresponding values from your deployment, keeping in mind that `principalId` is the identifier of your user in Entra ID.
+
+- **Storage Account**  
+   Assign the "Storage Blob Data Reader" role to the user for accessing blob storage.
+   ```bash
+   az role assignment create \
+       --assignee $principalId \
+       --role "Storage Blob Data Reader" \
+       --scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Storage/storageAccounts/$storageAccountName"
+   ```
+
+- **Key Vault**  
+   Assign the "Key Vault Secrets User" role to the user to access secrets.
+   ```bash
+   az role assignment create \
+       --assignee $principalId \
+       --role "Key Vault Secrets User" \
+       --scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.KeyVault/vaults/$keyVaultName"
+   ```
+
+- **Azure AI Services**  
+   Assign the "Cognitive Services Contributor" role to the user for using AI services.
+   ```bash
+   az role assignment create \
+       --assignee $principalId \
+       --role "Cognitive Services Contributor" \
+       --scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.CognitiveServices/accounts/$aiServicesAccountName"
+   ```
+
+- **Application Insights**  
+   Assign the "Application Insights Component Contributor" role to the user for monitoring.
+   ```bash
+   az role assignment create \
+       --assignee $principalId \
+       --role 'Application Insights Component Contributor' \
+       --scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/microsoft.insights/components/$appInsightsName"
+   ```
 
 ## Frontend customizations
 
@@ -149,17 +193,9 @@ const speechSynthesisEnabled = true;
 
 ## Contributing
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+We appreciate your interest in contributing to this project! Please refer to the [CONTRIBUTING.md](https://github.com/Azure/GPT-RAG/blob/main/CONTRIBUTING.md) page for detailed guidelines on how to contribute, including information about the Contributor License Agreement (CLA), code of conduct, and the process for submitting pull requests.
 
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
-
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+Thank you for your support and contributions!
 
 ## Trademarks
 

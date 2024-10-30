@@ -1,29 +1,61 @@
+// frontend/src/components/DocView/FileViewer.tsx
 import PDFViewer from "./PDFViewer";
 import TextViewer from "./TextViewer";
 import DocxViewer from "./DocxViewer";
 import IMGViewer from "./IMGViewer";
 import PptxViewer from "./PPTXViewer";
+import XlsxViewer from "./XlsxViewer";
 
 interface FileViewerProps {
-    file: (string|Blob);
+    file: string | Blob;
     fileType: string;
     page?: number;
+    fileName?: string;
 }
 
-const FileViewer: React.ComponentType<FileViewerProps> = ({ file, fileType, page }) => {
-    console.log("Filetipe", fileType);
-    let ViewerComponent: React.ComponentType<any> = () => <div>No hay visor disponible para este tipo de archivo.</div>;
+const determineFileType = (fileType: string, fileName?: string) => {
+    if (fileType && fileType !== "unknown") {
+        return fileType;
+    }
 
-    let componentProps = { file, fileType, page };
+    const extension = fileName?.split('.').pop()?.toLowerCase();
 
-    switch (fileType) {
+    switch (extension) {
+        case 'pdf':
+            return 'pdf';
+        case 'txt':
+        case 'vtt':
+            return 'txt';
+        case 'docx':
+            return 'docx';
+        case 'pptx':
+            return 'pptx';
+        case 'xlsx':
+            return 'xlsx';
+        case 'jpg':
+        case 'jpeg':
+        case 'png':
+            return 'jpg';
+        default:
+            return 'unknown';
+    }
+}
+
+const FileViewer: React.FC<FileViewerProps> = ({ file, fileType, page, fileName }) => {
+    const fileTypeToUse = determineFileType(fileType, fileName);
+
+    let ViewerComponent: React.ComponentType<any> = () => <div>There is no viewer available for this type of file.</div>;
+    let componentProps = { file, fileType: fileTypeToUse, page, fileName };
+
+    switch (fileTypeToUse) {
         case "pdf":
             ViewerComponent = PDFViewer;
             componentProps.file = file;
             componentProps.page = page;
             break;
         case "txt":
-        case "cvs":
+        case "vtt":
+        case "csv":
             ViewerComponent = TextViewer;
             break;
         case "docx":
@@ -34,14 +66,21 @@ const FileViewer: React.ComponentType<FileViewerProps> = ({ file, fileType, page
             ViewerComponent = PptxViewer;
             componentProps.file = file;
             break;
+        case "xlsx":
+            ViewerComponent = XlsxViewer;
+            componentProps.file = file;
+            componentProps.fileName = fileName;
+            break;
         case "jpg":
         case "png":
+        case "jpeg":
             ViewerComponent = IMGViewer;
             componentProps.file = file;
             break;
+        default:
+            return <div>There is no viewer available for this type of file.</div>;
     }
 
-    // @ts-ignore
     return <ViewerComponent {...componentProps} />;
 };
 
