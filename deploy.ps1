@@ -41,15 +41,17 @@ if (-not $?) { Write-Host "Frontend build failed!" -ForegroundColor Red; exit 1 
 npm run build
 if (-not $?) { Write-Host "Frontend build failed!" -ForegroundColor Red; exit 1 }
 
+Set-Location "../"
+
 # Step 2: Prepare for deployment
 Write-Host "Preparing for deployment..."
 
 # Move to the backend folder
-Set-Location "../backend"
 if (-not (Test-Path "backend")) {
     Write-Host "Backend folder not found!" -ForegroundColor Red
     exit 1
 }
+Set-Location "backend"
 
 # Remove backend_env if it exists
 if (Test-Path "backend_env") {
