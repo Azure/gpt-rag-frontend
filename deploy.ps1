@@ -41,15 +41,17 @@ if (-not $?) { Write-Host "Frontend build failed!" -ForegroundColor Red; exit 1 
 npm run build
 if (-not $?) { Write-Host "Frontend build failed!" -ForegroundColor Red; exit 1 }
 
+Set-Location "../"
+
 # Step 2: Prepare for deployment
 Write-Host "Preparing for deployment..."
 
 # Move to the backend folder
-Set-Location "../backend"
 if (-not (Test-Path "backend")) {
     Write-Host "Backend folder not found!" -ForegroundColor Red
     exit 1
 }
+Set-Location "backend"
 
 # Remove backend_env if it exists
 if (Test-Path "backend_env") {
@@ -60,7 +62,11 @@ if (Test-Path "backend_env") {
 
 # Step 3: Zip backend source code
 Write-Host "Zipping backend source code..."
-Compress-Archive -Path * -DestinationPath "../deploy.zip"
+if (Test-Path "../deploy.zip") {
+    Write-Host "Removing existing deploy.zip file..."
+    Remove-Item -Force "../deploy.zip"
+}
+Compress-Archive -Path * -DestinationPath "../deploy.zip" -Force
 if (-not $?) { Write-Host "Failed to zip backend code!" -ForegroundColor Red; exit 1 }
 Set-Location ..
 
