@@ -62,7 +62,11 @@ if (Test-Path "backend_env") {
 
 # Step 3: Zip backend source code
 Write-Host "Zipping backend source code..."
-Compress-Archive -Path * -DestinationPath "../deploy.zip"
+if (Test-Path "../deploy.zip") {
+    Write-Host "Removing existing deploy.zip file..."
+    Remove-Item -Force "../deploy.zip"
+}
+Compress-Archive -Path * -DestinationPath "../deploy.zip" -Force
 if (-not $?) { Write-Host "Failed to zip backend code!" -ForegroundColor Red; exit 1 }
 Set-Location ..
 
