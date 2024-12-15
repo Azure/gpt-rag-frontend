@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Stack, TextField } from "@fluentui/react";
 import { getTokenOrRefresh } from './token_util';
-import { Send28Filled, BookOpenMicrophone28Filled, SlideMicrophone32Filled } from "@fluentui/react-icons";
+import { Send28Filled, BookOpenMicrophone28Filled, SlideMicrophone32Filled, AttachFilled } from "@fluentui/react-icons";
 import { ResultReason, SpeechConfig, AudioConfig, SpeechRecognizer } from 'microsoft-cognitiveservices-speech-sdk';
 import { getLanguageText } from '../../utils/languageUtils'; 
 
 import styles from "./QuestionInput.module.css";
+
 interface Props {
-    onSend: (question: string) => void;
+    onSend: (question: string, file?: File) => void;
     disabled: boolean;
     placeholder?: string;
     clearOnSend?: boolean;
@@ -15,16 +16,18 @@ interface Props {
 
 export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Props) => {
     const [question, setQuestion] = useState<string>("");
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     const sendQuestion = () => {
         if (disabled || !question.trim()) {
             return;
         }
 
-        onSend(question);
+        onSend(question, selectedFile || undefined);
 
         if (clearOnSend) {
             setQuestion("");
+            setSelectedFile(null);
         }
     };
 
@@ -66,6 +69,12 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
         }
     };
 
+    const onFileChange = (ev: React.ChangeEvent<HTMLInputElement>) => {
+        if (ev.target.files && ev.target.files.length > 0) {
+            setSelectedFile(ev.target.files[0]);
+        }
+    };
+
     const sendQuestionDisabled = disabled || !question.trim();
 
     return (
@@ -95,6 +104,16 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                 >
                     <SlideMicrophone32Filled primaryFill="rgba(115, 118, 225, 1)" />
                 </div>
+                <label htmlFor="file-upload" className={styles.questionInputFileButton}>
+                    <AttachFilled primaryFill="rgba(115, 118, 225, 1)" />
+                </label>
+                <input
+                    id="file-upload"
+                    type="file"
+                    style={{ display: "none" }}
+                    onChange={onFileChange}
+                    disabled={disabled}
+                />
             </div>
         </Stack>
     );
