@@ -139,6 +139,8 @@ def chatgpt():
     start_time = time.time()  # Start the timer    
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
+    file = request.json["file"]
+    logging.info(f"[webbackend] from orchestrator file : {file}") 
     
     logging.info("[webbackend] conversation_id: " + conversation_id)    
     logging.info("[webbackend] question: " + question)
@@ -216,6 +218,13 @@ def getGptSpeechToken():
     except Exception as e:
         logging.exception("[webbackend] exception in /api/get-speech-token")
         return jsonify({"error": str(e)}), 500
+
+@app.route("/api/upload-file", methods=["POST"])
+def uploadBlob():
+    logging.info(f"Starting upload blob function for blob")
+    if "file" not in request.files:
+        return jsonify({"error": "No file part in the request"}), 400
+    return jsonify({'file_url':'www.sample.com/sample'})
 
 @app.route("/api/get-storage-account", methods=["GET"])
 def getStorageAccount():

@@ -48,8 +48,10 @@ const Chat = () => {
     const [userId, setUserId] = useState<string>("");
     const triggered = useRef(false);
 
+    const [filePreview, setFilePreview] = useState<string | null>(null);
 
-    const makeApiRequestGpt = async (question: string) => {
+
+    const makeApiRequestGpt = async (question: string,selectedFile?: File) => {
         lastQuestionRef.current = question;
 
         error && setError(undefined);
@@ -58,12 +60,43 @@ const Chat = () => {
         setActiveAnalysisPanelTab(undefined);
 
         try {
+            let fileUrl = null;
+            if (selectedFile) {
+                const formData = new FormData();
+                formData.append("file", selectedFile);
+
+                // Extract MIME type for file
+                const fileMimeType = selectedFile.type;
+                setFileType(fileMimeType);
+                console.log('error {',fileMimeType);
+
+                // Preview the file based on its type
+                const previewUrl = URL.createObjectURL(selectedFile);
+                setFilePreview(previewUrl);
+                
+                try {
+                    const uploadResponse = await fetch("/api/upload-file", {
+                        method: "POST",
+                        body: formData,
+                    });
+                    if (!uploadResponse.ok) {
+                        throw new Error("Failed to upload file");
+                    }
+                    const uploadResult = await uploadResponse.json();
+                    fileUrl = uploadResult.file_url; // Assuming the API returns the file URL
+                } catch (uploadError) {
+                    console.error("File upload error:", uploadError);
+                    setError(uploadError);
+                    return;
+                }
+            }
             const history: ChatTurn[] = answers.map(a => ({ user: a[0], bot: a[1].answer }));
             const request: ChatRequestGpt = {
                 history: [...history, { user: question, bot: undefined }],
                 approach: Approaches.ReadRetrieveRead,
                 conversation_id: userId,
                 query: question,
+                file: fileUrl,
                 overrides: {
                     promptTemplate: promptTemplate.length === 0 ? undefined : promptTemplate,
                     excludeCategory: excludeCategory.length === 0 ? undefined : excludeCategory,
@@ -261,7 +294,6 @@ const Chat = () => {
         console.log('activeAnalysisPanelTab is now:', activeAnalysisPanelTab);
     };
     
-
     return (
         <div className={styles.container}>
             <div className={styles.commandsContainer}>
@@ -269,6 +301,18 @@ const Chat = () => {
             </div>
             <div className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
+                    {/* Preview Section */}
+                    {filePreview && (
+                        <div className={styles.filePreview}>
+                            {fileType.startsWith("image") ? (
+                                <img src={filePreview} alt="file preview" className={styles.imagePreview} />
+                            ) : fileType === "text" || fileType === "application/pdf" ? (
+                                <iframe src={filePreview} width="100%" height="400px" title="File preview" />
+                            ) : (
+                                <p>File preview is not supported for this type.</p>
+                            )}
+                        </div>
+                    )}
                     {!lastQuestionRef.current ? (
                         <div className={styles.chatEmptyState}>
                         </div>
@@ -318,7 +362,7 @@ const Chat = () => {
                     )}
 
                     <div className={styles.chatInput}>
-                        <QuestionInput clearOnSend placeholder={placeholderText} disabled={isLoading} onSend={question => makeApiRequestGpt(question)} />
+                        <QuestionInput clearOnSend placeholder={placeholderText} disabled={isLoading} onSend={(question, selectedFile) => makeApiRequestGpt(question, selectedFile)} />
                     </div>
                 </div>
 

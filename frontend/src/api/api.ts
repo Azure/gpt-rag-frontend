@@ -13,6 +13,7 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
             approach: options.approach,
             conversation_id: options.conversation_id,
             query: options.query,
+            file: options.file,
             overrides: {
                 semantic_ranker: options.overrides?.semanticRanker,
                 semantic_captions: options.overrides?.semanticCaptions,
