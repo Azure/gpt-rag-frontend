@@ -89,6 +89,19 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                 onChange={onQuestionChange}
                 onKeyDown={onEnterPress}
             />
+            {selectedFile && (
+                <div className={styles.fileAttachmentIndicator}>
+                    <AttachFilled primaryFill="rgba(115, 118, 225, 1)" />
+                    <span className={styles.fileName}>{selectedFile.name}</span>
+                    <span
+                        className={styles.clearFile}
+                        onClick={() => setSelectedFile(null)}
+                        title="Remove attached file"
+                    >
+                        ✕
+                    </span>
+                </div>
+            )}
             <div className={styles.questionInputButtonsContainer}>
                 <div
                     className={`${styles.questionInputSendButton} ${sendQuestionDisabled ? styles.questionInputSendButtonDisabled : ""}`}
@@ -98,7 +111,7 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                     <Send28Filled primaryFill="rgba(115, 118, 225, 1)" />
                 </div>
                 <div
-                    className={`${styles.questionInputSendButton}}`}
+                    className={`${styles.questionInputSendButton}`}
                     aria-label="Talk"
                     onClick={sttFromMic}
                 >
@@ -117,4 +130,5 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
             </div>
         </Stack>
     );
+    
 };
