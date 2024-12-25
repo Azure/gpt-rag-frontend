@@ -301,18 +301,6 @@ const Chat = () => {
             </div>
             <div className={styles.chatRoot}>
                 <div className={styles.chatContainer}>
-                    {/* Preview Section */}
-                    {filePreview && (
-                        <div className={styles.filePreview}>
-                            {fileType.startsWith("image") ? (
-                                <img src={filePreview} alt="file preview" className={styles.imagePreview} />
-                            ) : fileType === "text" || fileType === "application/pdf" ? (
-                                <iframe src={filePreview} width="100%" height="400px" title="File preview" />
-                            ) : (
-                                <p>File preview is not supported for this type.</p>
-                            )}
-                        </div>
-                    )}
                     {!lastQuestionRef.current ? (
                         <div className={styles.chatEmptyState}>
                         </div>
@@ -320,7 +308,7 @@ const Chat = () => {
                         <div className={styles.chatMessageStream}>
                                 {answers.map((answer, index) => (
                                     <div key={index}>
-                                        <UserChatMessage message={answer[0]} />
+                                        <UserChatMessage message={answer[0]} file={answer[1].file}/>
                                         <div className={styles.chatMessageGpt}>
                                             <Answer
                                                 key={index}
@@ -338,7 +326,7 @@ const Chat = () => {
                                 ))}
                                 {isLoading && (
                                 <>
-                                    <UserChatMessage message={lastQuestionRef.current} />
+                                    <UserChatMessage message={lastQuestionRef.current} file={null} />
                                     <div className={styles.chatMessageGptMinWidth}>
                                         <AnswerLoading />
                                     </div>
@@ -346,7 +334,7 @@ const Chat = () => {
                             )}
                             {error ? (
                                 <>
-                                    <UserChatMessage message={lastQuestionRef.current} />
+                                    <UserChatMessage message={lastQuestionRef.current} file={null}/>
                                     <div className={styles.chatMessageGptMinWidth}>
                                         <AnswerError 
                                             error={error.toString() === "SyntaxError: Unexpected end of JSON input" 

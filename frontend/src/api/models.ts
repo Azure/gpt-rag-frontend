@@ -24,6 +24,7 @@ export type AskRequest = {
 
 export type AskResponse = {
     answer: string;
+    file: string | null;
     thoughts: string | null;
     data_points: string[];
     error?: string;
@@ -38,6 +39,7 @@ export type TransactionData = {
 export type AskResponseGpt= {
     conversation_id: string;
     answer: string;
+    file : string | null;
     current_state: string;
     thoughts: string | null;
     data_points: string[];
