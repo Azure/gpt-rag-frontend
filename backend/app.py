@@ -139,6 +139,8 @@ def chatgpt():
     start_time = time.time()  # Start the timer    
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
+    file = request.json["file"]
+    logging.info(f"[webbackend] from orchestrator file : {file}") 
     
     logging.info("[webbackend] conversation_id: " + conversation_id)    
     logging.info("[webbackend] question: " + question)
@@ -217,6 +219,38 @@ def getGptSpeechToken():
         logging.exception("[webbackend] exception in /api/get-speech-token")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/upload-blob", methods=["POST"])
+def uploadBlob():
+    try:
+        # Retrieve the file from the request
+        uploaded_file = request.files['file']
+        if not uploaded_file:
+            return jsonify({"error": "No file provided."}), 400
+
+        # Generate a blob name (you can customize this)
+        blob_name = uploaded_file.filename
+
+        # Authenticate with Azure Blob Storage
+        client_credential = DefaultAzureCredential()
+        blob_service_client = BlobServiceClient(
+            f"https://{STORAGE_ACCOUNT}.blob.core.windows.net",
+            client_credential
+        )
+
+        # Get a blob client
+        blob_client = blob_service_client.get_blob_client(container='attachments', blob=blob_name)
+
+        # Upload the file
+        blob_client.upload_blob(uploaded_file.read(), overwrite=True)
+        logging.info(f"Successfully uploaded blob: {blob_name}")
+
+        # Return the blob name
+        return jsonify({"blob_name": blob_name}), 200
+
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/upload-blob")
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/api/get-storage-account", methods=["GET"])
 def getStorageAccount():
     if not STORAGE_ACCOUNT:
@@ -230,6 +264,8 @@ def getStorageAccount():
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
     blob_name = unquote(request.json["blob_name"])
+    container = request.json["container"]
+
     logging.info(f"Starting getBlob function for blob: {blob_name}")
     try:
         client_credential = DefaultAzureCredential()
@@ -237,7 +273,9 @@ def getBlob():
             f"https://{STORAGE_ACCOUNT}.blob.core.windows.net",
             client_credential
         )
-        blob_client = blob_service_client.get_blob_client(container='documents', blob=blob_name)
+        if not container :
+            container = 'documents'
+        blob_client = blob_service_client.get_blob_client(container=container, blob=blob_name)
         blob_data = blob_client.download_blob()
         blob_text = blob_data.readall()
         logging.info(f"Successfully fetched blob: {blob_name}")
