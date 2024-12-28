@@ -75,7 +75,7 @@ const Chat = () => {
                 setFilePreview(previewUrl);
                 
                 try {
-                    const uploadResponse = await fetch("/api/upload-file", {
+                    const uploadResponse = await fetch("/api/upload-blob", {
                         method: "POST",
                         body: formData,
                     });
@@ -83,7 +83,7 @@ const Chat = () => {
                         throw new Error("Failed to upload file");
                     }
                     const uploadResult = await uploadResponse.json();
-                    fileUrl = uploadResult.file_url; // Assuming the API returns the file URL
+                    fileUrl = uploadResult.blob_name; // Assuming the API returns the file URL
                 } catch (uploadError) {
                     console.error("File upload error:", uploadError);
                     setError(uploadError);

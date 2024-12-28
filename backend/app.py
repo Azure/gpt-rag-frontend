@@ -219,12 +219,37 @@ def getGptSpeechToken():
         logging.exception("[webbackend] exception in /api/get-speech-token")
         return jsonify({"error": str(e)}), 500
 
-@app.route("/api/upload-file", methods=["POST"])
+@app.route("/api/upload-blob", methods=["POST"])
 def uploadBlob():
-    logging.info(f"Starting upload blob function for blob")
-    if "file" not in request.files:
-        return jsonify({"error": "No file part in the request"}), 400
-    return jsonify({'file_url':'www.sample.com/sample'})
+    try:
+        # Retrieve the file from the request
+        uploaded_file = request.files['file']
+        if not uploaded_file:
+            return jsonify({"error": "No file provided."}), 400
+
+        # Generate a blob name (you can customize this)
+        blob_name = uploaded_file.filename
+
+        # Authenticate with Azure Blob Storage
+        client_credential = DefaultAzureCredential()
+        blob_service_client = BlobServiceClient(
+            f"https://{STORAGE_ACCOUNT}.blob.core.windows.net",
+            client_credential
+        )
+
+        # Get a blob client
+        blob_client = blob_service_client.get_blob_client(container='attachments', blob=blob_name)
+
+        # Upload the file
+        blob_client.upload_blob(uploaded_file.read(), overwrite=True)
+        logging.info(f"Successfully uploaded blob: {blob_name}")
+
+        # Return the blob name
+        return jsonify({"blob_name": blob_name}), 200
+
+    except Exception as e:
+        logging.exception("[webbackend] exception in /api/upload-blob")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/get-storage-account", methods=["GET"])
 def getStorageAccount():
