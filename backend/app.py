@@ -264,6 +264,8 @@ def getStorageAccount():
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
     blob_name = unquote(request.json["blob_name"])
+    container = request.json["container"]
+
     logging.info(f"Starting getBlob function for blob: {blob_name}")
     try:
         client_credential = DefaultAzureCredential()
@@ -271,7 +273,9 @@ def getBlob():
             f"https://{STORAGE_ACCOUNT}.blob.core.windows.net",
             client_credential
         )
-        blob_client = blob_service_client.get_blob_client(container='documents', blob=blob_name)
+        if not container :
+            container = 'documents'
+        blob_client = blob_service_client.get_blob_client(container=container, blob=blob_name)
         blob_data = blob_client.download_blob()
         blob_text = blob_data.readall()
         logging.info(f"Successfully fetched blob: {blob_name}")

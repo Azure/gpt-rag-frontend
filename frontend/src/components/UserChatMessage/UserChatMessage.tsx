@@ -19,7 +19,7 @@ export const UserChatMessage = ({ message, file }: Props) => {
                         headers: {
                             "Content-Type": "application/json",
                         },
-                        body: JSON.stringify({ blob_name: file }),
+                        body: JSON.stringify({ blob_name: file,container:'attachments' }),
                     });
 
                     if (!response.ok) {
