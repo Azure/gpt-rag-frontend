@@ -5,7 +5,7 @@ import time
 from urllib.parse import unquote
 
 import requests
-from azure.identity import DefaultAzureCredential
+from azure.identity import ManagedIdentityCredential, AzureCliCredential, ChainedTokenCredential
 from azure.storage.blob import BlobServiceClient
 from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, request
@@ -41,7 +41,10 @@ logging.basicConfig(level=LOGLEVEL)
 
 # Obtain the token using Managed Identity
 def get_managed_identity_token():
-    credential = DefaultAzureCredential()
+    credential = ChainedTokenCredential(
+                    ManagedIdentityCredential(),
+                    AzureCliCredential()
+                )
     token = credential.get_token("https://management.azure.com/.default").token
     return token
 
@@ -232,7 +235,10 @@ def getBlob():
     blob_name = unquote(request.json["blob_name"])
     logging.info(f"Starting getBlob function for blob: {blob_name}")
     try:
-        client_credential = DefaultAzureCredential()
+        client_credential = ChainedTokenCredential(
+                    ManagedIdentityCredential(),
+                    AzureCliCredential()
+                )
         blob_service_client = BlobServiceClient(
             f"https://{STORAGE_ACCOUNT}.blob.core.windows.net",
             client_credential
