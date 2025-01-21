@@ -22,9 +22,15 @@ export type AskRequest = {
     overrides?: AskRequestOverrides;
 };
 
+export interface Thought {
+    speaker: string;
+    message_type: string;
+    content: string | string[];
+}
+
 export type AskResponse = {
     answer: string;
-    thoughts: string | null;
+    thoughts: string | Thought[] | null;
     data_points: string[];
     error?: string;
 };
@@ -39,7 +45,7 @@ export type AskResponseGpt= {
     conversation_id: string;
     answer: string;
     current_state: string;
-    thoughts: string | null;
+    thoughts: string | Thought[] | null;
     data_points: string[];
     transaction_data?: TransactionData;
     error?: string;
