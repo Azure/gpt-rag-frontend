@@ -134,7 +134,8 @@ def check_authorization(request):
         'authorized': authorized,
         'client_principal_id': client_principal_id,
         'client_principal_name': client_principal_name,
-        'client_group_names': groups
+        'client_group_names': groups,
+        'access_token': access_token
     }
 
 @app.route("/chatgpt", methods=["POST"])
