@@ -22,6 +22,10 @@ def read_env_list(var_name):
     value = os.getenv(var_name, "")
     return [item.strip() for item in value.split(",") if item.strip()]
 
+def read_env_boolean(var_name, default=False):
+    value = os.getenv(var_name, str(default)).strip().lower()
+    return value in ['true', '1', 'yes']
+
 # Read Environment Variables
 SPEECH_REGION = read_env_variable('SPEECH_REGION')
 ORCHESTRATOR_ENDPOINT = read_env_variable('ORCHESTRATOR_ENDPOINT')
@@ -31,6 +35,7 @@ LOGLEVEL = read_env_variable('LOGLEVEL', 'INFO').upper()
 ALLOWED_GROUP_NAMES = read_env_list('ALLOWED_GROUP_NAMES')
 ALLOWED_USER_PRINCIPALS = read_env_list('ALLOWED_USER_PRINCIPALS')
 ALLOWED_USER_NAMES = read_env_list('ALLOWED_USER_NAMES')
+FORWARD_ACCESS_TOKEN = read_env_boolean('FORWARD_ACCESS_TOKEN')
 
 SPEECH_RECOGNITION_LANGUAGE = read_env_variable('SPEECH_RECOGNITION_LANGUAGE')
 SPEECH_SYNTHESIS_LANGUAGE = read_env_variable('SPEECH_SYNTHESIS_LANGUAGE')
@@ -162,7 +167,8 @@ def chatgpt():
     client_principal_id = auth_info['client_principal_id']
     client_principal_name = auth_info['client_principal_name']
     client_group_names = auth_info['client_group_names']
-    
+    access_token = auth_info['access_token']
+
     # Call orchestrator
     function_key = get_function_key()
         
@@ -175,6 +181,11 @@ def chatgpt():
             "client_principal_name": client_principal_name,
             "client_group_names": client_group_names
         }
+
+        if FORWARD_ACCESS_TOKEN and access_token:
+            logging.error("[webbackend] Forwarding access token to orchestrator.")
+            payload['access_token'] = access_token
+
         headers = {
             'Content-Type': 'application/json',
             'x-functions-key': function_key  
