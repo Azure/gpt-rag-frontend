@@ -13,6 +13,7 @@ from flask import Flask, Response, jsonify, request, session, redirect, url_for
 from flask_cors import CORS
 import msal
 from flask_session import Session
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
@@ -104,6 +105,9 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "a_very_secret_key")
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = "./flask_session_files"
 app.config["SESSION_PERMANENT"] = False
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.config["PREFERRED_URL_SCHEME"] = "https"
+
 Session(app)
 
 # --- Helper function to obtain a valid (refreshed) access token ---
