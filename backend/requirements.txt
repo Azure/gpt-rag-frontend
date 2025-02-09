@@ -7,3 +7,4 @@ python-dotenv==1.0.0
 azure-identity
 azure-keyvault-secrets
 azure-storage-blob==12.19.0
+Flask-Session==0.8.0

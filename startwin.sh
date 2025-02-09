@@ -31,5 +31,5 @@ echo "Building frontend"
 echo "Starting backend"
 cd ../backend
 # Open the browser on Windows (assuming the default browser is set)
-start http://127.0.0.1:8000
+start http://localhost:8000
 ./backend_env/Scripts/python ./app.py || exit $?

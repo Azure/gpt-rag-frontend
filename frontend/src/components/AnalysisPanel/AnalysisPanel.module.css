@@ -1,6 +1,51 @@
 .thoughtProcess {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
+        sans-serif;
     word-wrap: break-word;
     padding-top: 12px;
     padding-bottom: 12px;
-}
+  }
+  
+  /* Container for each chat message */
+  .message {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-left: 4px solid #ccc;
+    background-color: #fff;
+    border-radius: 3px;
+  }
+  
+  /* Speaker-specific styling */
+  .message.user {
+    border-color: #1e88e5;
+    background-color: #e3f2fd;
+  }
+  
+  .message.triage_agent {
+    border-color: #43a047;
+    background-color: #e8f5e9;
+  }
+  
+  .message.dax_query_agent {
+    border-color: #fdd835;
+    background-color: #fffde7;
+  }
+  
+  .message.chat_closure {
+    border-color: #e53935;
+    background-color: #ffebee;
+  }
+  
+  /* Speaker name styling */
+  .speaker {
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-transform: capitalize;
+  }
+  
+  /* Message content styling */
+  .content {
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  

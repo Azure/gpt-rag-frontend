@@ -91,6 +91,15 @@ Assign the necessary permissions to the user who will run the frontend applicati
 
 Replace the variables (those starting with the $ symbol) with the corresponding values from your deployment, keeping in mind that `principalId` is the identifier of your user in Entra ID.
 
+- **Orchestrator**  
+   Assign the "Contributor" role to the user for accessing function app.
+   ```bash
+    az role assignment create \
+        --assignee $principalId \
+        --role "Contributor" \
+        --scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Web/sites/$functionAppName"
+   ```
+
 - **Storage Account**  
    Assign the "Storage Blob Data Reader" role to the user for accessing blob storage.
    ```bash
