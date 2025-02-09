@@ -88,13 +88,13 @@ export const QuestionInput = ({ onSend, disabled, placeholder, clearOnSend }: Pr
                 >
                     <Send28Filled primaryFill="rgba(115, 118, 225, 1)" />
                 </div>
-                <div
+                {/* <div
                     className={`${styles.questionInputSendButton}}`}
                     aria-label="Talk"
                     onClick={sttFromMic}
                 >
                     <SlideMicrophone32Filled primaryFill="rgba(115, 118, 225, 1)" />
-                </div>
+                </div> */}
             </div>
         </Stack>
     );
