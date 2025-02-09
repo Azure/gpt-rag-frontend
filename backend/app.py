@@ -5,7 +5,6 @@ import time
 from urllib.parse import unquote
 import uuid
 import requests
-import asyncio  # <-- Import asyncio
 
 from azure.identity import ManagedIdentityCredential, AzureCliCredential, ChainedTokenCredential
 from azure.storage.blob import BlobServiceClient
@@ -17,7 +16,7 @@ from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Import the asynchronous secret retrieval function
-from keyvault import async_get_secret
+from keyvault import get_secret
 
 load_dotenv()
 
@@ -69,8 +68,8 @@ logging.basicConfig(level=LOGLEVEL)
 # Load secrets from Key Vault using the asynchronous function at startup.
 # This avoids having to call asyncio.run() repeatedly in your helper functions.
 # ------------------------------------------------------------------------------
-FLASK_SECRET_KEY = asyncio.run(async_get_secret(FLASK_SECRET_KEY_NAME))
-APP_SERVICE_CLIENT_SECRET = asyncio.run(async_get_secret(APP_SERVICE_CLIENT_SECRET_NAME))
+FLASK_SECRET_KEY =  get_secret(FLASK_SECRET_KEY_NAME)
+APP_SERVICE_CLIENT_SECRET = get_secret(APP_SERVICE_CLIENT_SECRET_NAME)
 
 # Obtain the token using Managed Identity
 def get_managed_identity_token():
