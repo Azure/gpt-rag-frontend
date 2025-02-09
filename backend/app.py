@@ -5,6 +5,7 @@ import time
 from urllib.parse import unquote
 import uuid
 import requests
+import asyncio  # <-- Import asyncio
 
 from azure.identity import ManagedIdentityCredential, AzureCliCredential, ChainedTokenCredential
 from azure.storage.blob import BlobServiceClient
@@ -14,7 +15,9 @@ from flask_cors import CORS
 import msal
 from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
-from keyvault import get_secret
+
+# Import the asynchronous secret retrieval function
+from keyvault import async_get_secret
 
 load_dotenv()
 
@@ -43,6 +46,7 @@ FORWARD_ACCESS_TOKEN_TO_ORCHESTRATOR = read_env_boolean('FORWARD_ACCESS_TOKEN_TO
 OTHER_AUTH_SCOPES = read_env_list('OTHER_AUTH_SCOPES')
 CLIENT_ID = os.getenv("CLIENT_ID", "your_client_id")
 APP_SERVICE_CLIENT_SECRET_NAME = os.getenv("APP_SERVICE_CLIENT_SECRET_NAME", "appServiceClientSecretKey")
+FLASK_SECRET_KEY_NAME = os.getenv("FLASK_SECRET_KEY_NAME", "flaskSecretKey")
 AUTHORITY = os.getenv("AUTHORITY", "https://login.microsoftonline.com/your_tenant_id")
 REDIRECT_PATH = os.getenv("REDIRECT_PATH", "/getAToken")  # Must match the Azure AD app registration redirect URI.
 SCOPE = [
@@ -60,6 +64,13 @@ SPEECH_SYNTHESIS_VOICE_NAME = read_env_variable('SPEECH_SYNTHESIS_VOICE_NAME')
 
 # Set logging
 logging.basicConfig(level=LOGLEVEL)
+
+# ------------------------------------------------------------------------------
+# Load secrets from Key Vault using the asynchronous function at startup.
+# This avoids having to call asyncio.run() repeatedly in your helper functions.
+# ------------------------------------------------------------------------------
+FLASK_SECRET_KEY = asyncio.run(async_get_secret(FLASK_SECRET_KEY_NAME))
+APP_SERVICE_CLIENT_SECRET = asyncio.run(async_get_secret(APP_SERVICE_CLIENT_SECRET_NAME))
 
 # Obtain the token using Managed Identity
 def get_managed_identity_token():
@@ -99,8 +110,9 @@ def get_function_key():
 
 app = Flask(__name__)
 CORS(app)
-# Remember to set a different secret key in production environments!
-app.secret_key = os.getenv("FLASK_SECRET_KEY", "a_very_secret_key")
+
+# Use the asynchronously retrieved Flask secret key
+app.secret_key = FLASK_SECRET_KEY
 
 # Configure server-side session storage
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
@@ -125,12 +137,10 @@ def get_valid_access_token(scopes):
     return result.get("access_token")
 
 # --- Authentication Endpoints ---
-# Only active if ENABLE_AUTHENTICATION is true.
 @app.route("/login")
 def login():
     if not ENABLE_AUTHENTICATION:
         return redirect(url_for("index"))
-    # Create a unique state for CSRF protection
     session["state"] = str(uuid.uuid4())
     auth_url = _build_auth_url(scopes=SCOPE, state=session["state"])
     return redirect(auth_url)
@@ -140,7 +150,6 @@ def authorized():
     if not ENABLE_AUTHENTICATION:
         return redirect(url_for("index"))
     
-    # Validate state to mitigate CSRF attacks
     if request.args.get("state") != session.get("state"):
         return redirect(url_for("index"))
     if "error" in request.args:
@@ -158,13 +167,11 @@ def authorized():
             logging.warning(f"Could not acquire token for user. Error: {result.get('error_description')}")
             return f"Login failure: {result.get('error_description')}", 400
         
-        # Store token and user information in session
         session["user"] = result.get("id_token_claims")
         session["graph_access_token"] = result.get("access_token")
         session["refresh_token"] = result.get("refresh_token")
         _save_cache(cache)
 
-    # For additional scopes, try to acquire a valid token
     if OTHER_AUTH_SCOPES:
         logging.info("[webbackend] Attempting to acquire token for other scopes.")
         try:
@@ -180,7 +187,6 @@ def authorized():
 def logout():
     if ENABLE_AUTHENTICATION:
         session.clear()
-        # Redirect to Azure AD logout endpoint if desired
         return redirect(
             AUTHORITY + "/oauth2/v2.0/logout" +
             "?post_logout_redirect_uri=" + url_for("index", _external=True)
@@ -188,7 +194,6 @@ def logout():
     else:
         return redirect(url_for("index"))
 
-# Helper functions for MSAL token cache management and building the MSAL app instance:
 def _build_auth_url(scopes=None, state=None):
     return _build_msal_app().get_authorization_request_url(
         scopes or [],
@@ -197,7 +202,8 @@ def _build_auth_url(scopes=None, state=None):
     )
 
 def _build_msal_app(cache=None):
-    client_secret = get_secret(APP_SERVICE_CLIENT_SECRET_NAME)
+    # Use the asynchronously retrieved client secret
+    client_secret = APP_SERVICE_CLIENT_SECRET
     return msal.ConfidentialClientApplication(
         CLIENT_ID,
         authority=AUTHORITY,
@@ -217,23 +223,17 @@ def _save_cache(cache):
 
 # --- End Authentication Endpoints ---
 
-# Serve the main index page.
 @app.route("/")
 def index():
     if ENABLE_AUTHENTICATION and not session.get("user"):
-        # If authentication is enabled and the user is not in the session,
-        # redirect to the login endpoint.
         return redirect(url_for("login"))
-    # Otherwise, serve the index.html page.
     return app.send_static_file("index.html")
 
-# Serve all other static assets (e.g., JS, CSS, images)
 @app.route("/<path:path>")
 def static_files(path):
     return app.send_static_file(path)
 
 def check_authorization():
-    # If authentication is disabled, return a default authorized user.
     if not ENABLE_AUTHENTICATION:
         return {
             'authorized': True,
@@ -243,7 +243,6 @@ def check_authorization():
             'access_token': None
         }
     
-    # Expect that after a successful login, user info is stored in session.
     user = session.get("user")
     if not user:
         logging.info("[webbackend] No user in session; user is not authenticated.")
@@ -255,10 +254,9 @@ def check_authorization():
             'access_token': None
         }
     
-    client_principal_id = user.get("oid")  # or another unique claim
+    client_principal_id = user.get("oid")
     client_principal_name = user.get("preferred_username") or user.get("upn")
     
-    # Refresh Graph access token for the current user
     try:
         graph_access_token = get_valid_access_token(SCOPE)
         session["graph_access_token"] = graph_access_token
@@ -266,7 +264,6 @@ def check_authorization():
         logging.error(f"[webbackend] Failed to refresh Graph token: {str(ex)}")
         graph_access_token = session.get("graph_access_token", None)
     
-    # If additional scopes are configured, try to refresh them as well
     other_access_token = None
     if OTHER_AUTH_SCOPES:
         try:
@@ -278,7 +275,6 @@ def check_authorization():
     
     access_token = other_access_token if other_access_token else graph_access_token
     
-    # Retrieve groups from Graph API using a valid Graph access token.
     groups = []
     if graph_access_token:
         try:
@@ -294,7 +290,6 @@ def check_authorization():
     else:
         logging.info("[webbackend] No valid Graph access token available; cannot get user groups")
     
-    # Allowed users/groups logic
     authorized = True
     if ALLOWED_GROUP_NAMES or ALLOWED_USER_PRINCIPALS or ALLOWED_USER_NAMES:
         authorized = False
@@ -317,14 +312,13 @@ def check_authorization():
 
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
-    start_time = time.time()  # Start the timer    
+    start_time = time.time()    
     conversation_id = request.json["conversation_id"]
     question = request.json["query"]
     
     logging.info("[webbackend] conversation_id: " + conversation_id)    
     logging.info("[webbackend] question: " + question)
     
-    # Check authorization (this will return dummy values if authentication is disabled)
     auth_info = check_authorization()
     
     if not auth_info['authorized']:
@@ -335,13 +329,11 @@ def chatgpt():
         }
         return jsonify(response)
     
-    # Extract user information
     client_principal_id = auth_info['client_principal_id']
     client_principal_name = auth_info['client_principal_name']
     client_group_names = auth_info['client_group_names']
     access_token = auth_info['access_token']
 
-    # Call orchestrator
     function_key = get_function_key()
         
     try:
@@ -354,7 +346,6 @@ def chatgpt():
             "client_group_names": client_group_names
         }
 
-        # Forward the access token if enabled and available.
         if FORWARD_ACCESS_TOKEN_TO_ORCHESTRATOR and access_token:
             logging.info("[webbackend] Forwarding access token to orchestrator.")
             payload['access_token'] = access_token
@@ -377,11 +368,9 @@ def chatgpt():
         }
         return jsonify(response)
     finally:
-        end_time = time.time()  # End the timer
+        end_time = time.time()  
         duration = end_time - start_time
         logging.info(f"[webbackend] Finished processing in {duration:.2f} seconds")
-
-# Methods to provide access to speech services and blob storage account blobs
 
 @app.route("/api/get-speech-token", methods=["GET"])
 def getGptSpeechToken():
