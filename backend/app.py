@@ -14,6 +14,7 @@ from flask_cors import CORS
 import msal
 from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
+from keyvault import get_secret
 
 load_dotenv()
 
@@ -41,7 +42,7 @@ ENABLE_AUTHENTICATION = read_env_boolean('ENABLE_AUTHENTICATION')
 FORWARD_ACCESS_TOKEN_TO_ORCHESTRATOR = read_env_boolean('FORWARD_ACCESS_TOKEN_TO_ORCHESTRATOR')
 OTHER_AUTH_SCOPES = read_env_list('OTHER_AUTH_SCOPES')
 CLIENT_ID = os.getenv("CLIENT_ID", "your_client_id")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET", "your_client_secret")
+APP_SERVICE_CLIENT_SECRET_NAME = os.getenv("APP_SERVICE_CLIENT_SECRET_NAME", "appServiceClientSecretKey")
 AUTHORITY = os.getenv("AUTHORITY", "https://login.microsoftonline.com/your_tenant_id")
 REDIRECT_PATH = os.getenv("REDIRECT_PATH", "/getAToken")  # Must match the Azure AD app registration redirect URI.
 SCOPE = [
@@ -102,12 +103,11 @@ CORS(app)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "a_very_secret_key")
 
 # Configure server-side session storage
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = "./flask_session_files"
 app.config["SESSION_PERMANENT"] = False
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config["PREFERRED_URL_SCHEME"] = "https"
-
 Session(app)
 
 # --- Helper function to obtain a valid (refreshed) access token ---
@@ -117,7 +117,9 @@ def get_valid_access_token(scopes):
     accounts = msal_app.get_accounts()
     account = accounts[0] if accounts else None
     result = msal_app.acquire_token_silent(scopes, account=account)
-    if not result or "error" in result:
+    if not result:
+        raise Exception("Could not refresh token silently: no token found in cache.")
+    if "error" in result:
         raise Exception(result.get("error_description", "Could not refresh token silently."))
     _save_cache(cache)
     return result.get("access_token")
@@ -195,10 +197,11 @@ def _build_auth_url(scopes=None, state=None):
     )
 
 def _build_msal_app(cache=None):
+    client_secret = get_secret(APP_SERVICE_CLIENT_SECRET_NAME)
     return msal.ConfidentialClientApplication(
         CLIENT_ID,
         authority=AUTHORITY,
-        client_credential=CLIENT_SECRET,
+        client_credential=client_secret,
         token_cache=cache
     )
 
