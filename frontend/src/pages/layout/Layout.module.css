@@ -1,3 +1,5 @@
+/* Layout.module.css */
+
 .layout {
     display: flex;
     flex-direction: column;
@@ -25,42 +27,9 @@
     text-decoration: none;
 }
 
-.headerLogo {
-    height: 40px;
-}
-
 .headerTitle {
     margin-left: 12px;
     font-weight: 600;
-}
-
-.headerNavList {
-    display: flex;
-    list-style: none;
-    padding-left: 0;
-}
-
-.headerNavPageLink {
-    color: #f2f2f2;
-    text-decoration: none;
-    opacity: 0.75;
-
-    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
-    transition-duration: 500ms;
-    transition-property: opacity;
-}
-
-.headerNavPageLink:hover {
-    opacity: 1;
-}
-
-.headerNavPageLinkActive {
-    color: #f2f2f2;
-    text-decoration: none;
-}
-
-.headerNavLeftMargin {
-    margin-left: 20px;
 }
 
 .headerRightText {
@@ -69,11 +38,60 @@
     color:  #002f87;
 }
 
-.microsoftLogo {
-    height: 23px;
-    font-weight: 600;
+/* Add the following styles for the main content */
+
+.mainContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    text-align: center;
 }
 
-.githubLogo {
-    height: 20px;
+.logoContainer {
+    margin-bottom: 40px;
+}
+
+.companyLogo {
+    max-width: 150px;
+    width: 100%;
+    height: auto;
+    background-color: transparent;
+}
+
+.examplesSection {
+    width: 100%;
+    max-width: 800px; /* Adjust the width as needed */
+}
+
+.examplesSection h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+}
+
+.examplesGrid {
+    display: flex;
+    flex-direction: row; /* Change to row for horizontal layout */
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap; /* Allows wrapping on smaller screens */
+    padding: 20px;
+}
+
+.exampleBubble {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 16px 24px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease;
+    max-width: 200px;
+    text-align: center;
+}
+
+.exampleText {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
 }
