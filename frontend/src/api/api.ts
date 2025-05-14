@@ -43,7 +43,7 @@ export function getCitationFilePath(citation: string): string {
     xhr.send();
 
     if (xhr.status > 299) {
-        console.log("Please check if STORAGE_ACCOUNT is in frontend app settings");
+        console.log("Please check if STORAGE_ACCOUNT_NAME is in frontend app settings");
         return storage_account
     } else {
         const parsedResponse = JSON.parse(xhr.responseText);
