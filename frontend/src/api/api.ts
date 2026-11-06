@@ -36,20 +36,5 @@ export async function chatApiGpt(options: ChatRequestGpt): Promise<AskResponseGp
 }
 
 export function getCitationFilePath(citation: string): string {
-    var storage_account = "please_check_if_storage_account_is_in_frontend_app_settings";
-    
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", "/api/get-storage-account", false);
-    xhr.send();
-
-    if (xhr.status > 299) {
-        console.log("Please check if STORAGE_ACCOUNT is in frontend app settings");
-        return storage_account
-    } else {
-        const parsedResponse = JSON.parse(xhr.responseText);
-        storage_account = parsedResponse['storageaccount'];
-    }
-    const file_path = `https://${storage_account}.blob.core.windows.net/documents/${citation}`
-    console.log('Citation file path:' + file_path);
-    return `https://${storage_account}.blob.core.windows.net/documents/${citation}`;
+    return `#citation-${encodeURIComponent(citation)}`;
 }

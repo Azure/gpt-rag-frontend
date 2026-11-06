@@ -12,9 +12,10 @@ export default defineConfig({
     server: {
         proxy: {
             '/chatgpt': "http://localhost:8000",
-            '/api/get-speech-token': "http://localhost:8000",
-            '/api/get-storage-account': "http://localhost:8000",            
-            '/api/get-blob': "http://localhost:8000"
+            '/api': "http://localhost:8000",
+            '/login': "http://localhost:8000",
+            '/getAToken': "http://localhost:8000",
+            '/logout': "http://localhost:8000"
         },
         host: true
     }

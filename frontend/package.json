@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -18,7 +18,7 @@
     "@react-spring/web": "^9.7.1",
     "dompurify": "^3.0.1",
     "mammoth": "^1.7.0",
-    "marked": "^14.1.2",           
+    "marked": "^14.1.2",
     "microsoft-cognitiveservices-speech-sdk": "^1.27.0",
     "react": "^18.2.0",
     "react-doc-viewer": "^0.1.5",

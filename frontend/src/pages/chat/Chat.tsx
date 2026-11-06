@@ -134,22 +134,29 @@ const Chat = () => {
         setFileType(type);
 
         try {
+            const tokenResponse = await fetch("/api/get-blob-token", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ blob_name: documentName })
+            });
+            if (!tokenResponse.ok) {
+                throw new Error(`Document authorization failed (${tokenResponse.status}).`);
+            }
+            const grant: { token: string } = await tokenResponse.json();
             const response = await fetch("/api/get-blob", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    blob_name: documentName
+                    token: grant.token
                 })
             });
     
             if (!response.ok) {
-                // Create a dummy blob with an error message
-                const dummyContent = `Download Error: It was not possible to download the document: ${documentName}`;
-                const dummyBlob = new Blob([dummyContent], { type: "text/html" });
-                console.log('Error fetching DOC: ${response.status}');
-                return dummyBlob;
+                throw new Error(`Document download failed (${response.status}).`);
             }
     
             return await response.blob();
@@ -233,6 +240,7 @@ const Chat = () => {
             setSelectedAnswer(index);
         } catch (e) {
             console.error('Error fetching document:', e);
+            setError(e);
         }
     };
     
