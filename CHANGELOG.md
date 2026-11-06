@@ -5,6 +5,7 @@
 - Require authenticated, authorized access to chat and data APIs by default.
 - Use short-lived document read tokens bound to the user and session.
 - Keep browser API calls same-origin and remove permissive cross-origin access.
+- Return generic JSON errors for login failures and require callback state.
 - Update document previews and development proxies for the read-token flow.
 - Include offline regression coverage and authentication configuration guidance.
 - Provide an application ZIP containing the backend and compiled frontend.

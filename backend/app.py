@@ -159,10 +159,12 @@ def authorized():
     if not ENABLE_AUTHENTICATION:
         return redirect(url_for("index"))
     
-    if request.args.get("state") != session.get("state"):
+    state = request.args.get("state")
+    if not state or state != session.get("state"):
         return redirect(url_for("index"))
     if "error" in request.args:
-        return f"Error: {request.args.get('error_description')}", 400
+        logging.warning("[webbackend] Authentication callback reported an error.")
+        return jsonify({"error": "Authentication failed."}), 400
     
     if request.args.get("code"):
         logging.info("[webbackend] Attempting to acquire token for user.")        
@@ -174,7 +176,7 @@ def authorized():
         )
         if "error" in result:
             logging.warning(f"Could not acquire token for user. Error: {result.get('error_description')}")
-            return f"Login failure: {result.get('error_description')}", 400
+            return jsonify({"error": "Authentication failed."}), 400
         
         session["user"] = result.get("id_token_claims")
         session["graph_access_token"] = result.get("access_token")
@@ -188,7 +190,7 @@ def authorized():
             session["other_access_token"] = other_access_token
         except Exception as ex:
             logging.warning(f"Could not acquire token for other scopes {OTHER_AUTH_SCOPES}. Error: {str(ex)}")
-            return f"Other scopes token acquisition failure: {str(ex)}", 400
+            return jsonify({"error": "Could not acquire a token for the requested scopes."}), 400
 
     return redirect(url_for("index"))
 

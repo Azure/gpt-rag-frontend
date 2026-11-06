@@ -83,6 +83,13 @@ class ApiAuthorizationTests(unittest.TestCase):
             path, method=method, base_url="https://frontend.example.test", **kwargs
         )
 
+    def authorize_callback(self, **query):
+        with self.client.session_transaction(base_url="https://frontend.example.test") as session:
+            session["state"] = "callback-fixture"
+        return self.request("GET", self.module.REDIRECT_PATH, query_string={
+            "state": "callback-fixture", **query
+        })
+
     def grant(self, name="report.pdf", client=None):
         response = self.request("POST", "/api/get-blob-token", client, json={"blob_name": name})
         self.assertEqual(response.status_code, 200)
@@ -319,6 +326,56 @@ class ApiAuthorizationTests(unittest.TestCase):
 
     def test_login_redirect_stays_available_without_authentication(self):
         self.assertEqual(self.request("GET", "/").status_code, 302)
+        self.assert_no_resource_access()
+
+    def test_login_callback_requires_matching_nonempty_state(self):
+        msal_app = self.patch(self.module, "_build_msal_app")
+        for query in [{}, {"state": ""}, {"state": "different-state"}]:
+            with self.subTest(query=query):
+                response = self.request("GET", self.module.REDIRECT_PATH, query_string={
+                    **query, "code": "fixture-code"
+                })
+                self.assertEqual(response.status_code, 302)
+        msal_app.assert_not_called()
+        self.assert_no_resource_access()
+
+    def test_login_callback_error_does_not_reflect_html(self):
+        description = '<script>alert("fixture")</script>'
+        response = self.authorize_callback(error="access_denied", error_description=description)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.mimetype, "application/json")
+        self.assertEqual(response.json, {"error": "Authentication failed."})
+        self.assertNotIn(description, response.get_data(as_text=True))
+        self.assert_no_resource_access()
+
+    def test_login_token_error_does_not_disclose_provider_details(self):
+        description = '<script>alert("provider fixture")</script>'
+        msal_app = self.patch(self.module, "_build_msal_app")
+        msal_app.return_value.acquire_token_by_authorization_code.return_value = {
+            "error": "invalid_grant", "error_description": description
+        }
+        response = self.authorize_callback(code="fixture-code")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.mimetype, "application/json")
+        self.assertEqual(response.json, {"error": "Authentication failed."})
+        self.assertNotIn(description, response.get_data(as_text=True))
+        self.assert_no_resource_access()
+
+    def test_other_scope_error_does_not_disclose_exception_details(self):
+        description = '<script>alert("scope fixture")</script>'
+        self.module.OTHER_AUTH_SCOPES = ["api://fixture/scope"]
+        self.patch(self.module, "get_valid_access_token", side_effect=Exception(description))
+        msal_app = self.patch(self.module, "_build_msal_app")
+        msal_app.return_value.acquire_token_by_authorization_code.return_value = {
+            "id_token_claims": {"oid": "user-a"}, "access_token": "local-auth-fixture"
+        }
+        response = self.authorize_callback(code="fixture-code")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.mimetype, "application/json")
+        self.assertEqual(response.json, {
+            "error": "Could not acquire a token for the requested scopes."
+        })
+        self.assertNotIn(description, response.get_data(as_text=True))
         self.assert_no_resource_access()
 
 
