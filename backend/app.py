@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import hmac
+import secrets
 import time
 from urllib.parse import unquote
 import uuid
@@ -8,9 +10,10 @@ import requests
 
 from azure.identity import ManagedIdentityCredential, AzureCliCredential, ChainedTokenCredential
 from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import AzureError, ResourceNotFoundError
 from dotenv import load_dotenv
-from flask import Flask, Response, jsonify, request, session, redirect, url_for
-from flask_cors import CORS
+from flask import Flask, Response, g, jsonify, request, session, redirect, url_for
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 import msal
 from flask_session import Session
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -40,7 +43,7 @@ STORAGE_ACCOUNT = read_env_variable('STORAGE_ACCOUNT')
 LOGLEVEL = read_env_variable('LOGLEVEL', 'INFO').upper()
 
 # MSAL / OIDC configuration for custom authentication
-ENABLE_AUTHENTICATION = read_env_boolean('ENABLE_AUTHENTICATION')
+ENABLE_AUTHENTICATION = read_env_boolean('ENABLE_AUTHENTICATION', default=True)
 FORWARD_ACCESS_TOKEN_TO_ORCHESTRATOR = read_env_boolean('FORWARD_ACCESS_TOKEN_TO_ORCHESTRATOR')
 OTHER_AUTH_SCOPES = read_env_list('OTHER_AUTH_SCOPES')
 CLIENT_ID = os.getenv("CLIENT_ID", "your_client_id")
@@ -108,16 +111,23 @@ def get_function_key():
     return function_key
 
 app = Flask(__name__)
-CORS(app)
 
 # Use the asynchronously retrieved Flask secret key
+if not FLASK_SECRET_KEY:
+    raise RuntimeError("The Flask session secret must be configured in Key Vault.")
 app.secret_key = FLASK_SECRET_KEY
+DOCUMENT_DOWNLOAD_TTL_SECONDS = 300
+document_tokens = URLSafeTimedSerializer(app.secret_key, salt="document-download")
 
 # Configure server-side session storage
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config["SESSION_TYPE"] = "filesystem"
 app.config["SESSION_FILE_DIR"] = "./flask_session_files"
 app.config["SESSION_PERMANENT"] = False
+app.config["SESSION_USE_SIGNER"] = True
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = read_env_boolean("SESSION_COOKIE_SECURE", default=True)
 app.config["PREFERRED_URL_SCHEME"] = "https"
 Session(app)
 
@@ -235,9 +245,9 @@ def static_files(path):
 def check_authorization():
     if not ENABLE_AUTHENTICATION:
         return {
-            'authorized': True,
-            'client_principal_id': 'no-auth',
-            'client_principal_name': 'anonymous',
+            'authorized': False,
+            'client_principal_id': None,
+            'client_principal_name': None,
             'client_group_names': [],
             'access_token': None
         }
@@ -309,24 +319,47 @@ def check_authorization():
         'access_token': access_token
     }
 
+def is_data_request():
+    return request.path == "/chatgpt" or request.path.startswith("/api/")
+
+@app.before_request
+def authorize_data_request():
+    if not is_data_request() or request.method == "OPTIONS":
+        return None
+    if not ENABLE_AUTHENTICATION:
+        logging.error("[webbackend] Data access rejected because authentication is disabled.")
+        return jsonify({"error": "Authentication must be enabled to access this service."}), 503
+
+    auth_info = check_authorization()
+    if not auth_info["authorized"] or not auth_info["client_principal_id"]:
+        status = 401 if not session.get("user") else 403
+        logging.warning("[webbackend] Data access denied (status=%d).", status)
+        return jsonify({"error": "Authentication required." if status == 401 else "Access denied."}), status
+    g.auth_info = auth_info
+
+@app.after_request
+def prevent_data_caching(response):
+    if is_data_request():
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 @app.route("/chatgpt", methods=["POST"])
 def chatgpt():
-    start_time = time.time()    
-    conversation_id = request.json["conversation_id"]
-    question = request.json["query"]
+    start_time = time.time()
+    data = request.get_json(silent=True)
+    if (not isinstance(data, dict)
+            or not isinstance(data.get("conversation_id"), str)
+            or not isinstance(data.get("query"), str)
+            or not data["query"].strip()):
+        logging.warning("[webbackend] Invalid chat request.")
+        return jsonify({"error": "A conversation_id and a non-empty query are required."}), 400
+    conversation_id = data["conversation_id"]
+    question = data["query"]
     
     logging.info("[webbackend] conversation_id: " + conversation_id)    
     logging.info("[webbackend] question: " + question)
     
-    auth_info = check_authorization()
-    
-    if not auth_info['authorized']:
-        response = {
-            "answer": "You are not authorized to access this service. Please contact your administrator.",
-            "thoughts": "The user attempted to access the service but is not part of any authorized users or groups.",
-            "conversation_id": conversation_id
-        }
-        return jsonify(response)
+    auth_info = g.auth_info
     
     client_principal_id = auth_info['client_principal_id']
     client_principal_name = auth_info['client_principal_name']
@@ -403,10 +436,59 @@ def getStorageAccount():
         logging.exception("[webbackend] exception in /api/get-storage-account")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/get-blob-token", methods=["POST"])
+def get_blob_token():
+    data = request.get_json(silent=True)
+    blob_name = data.get("blob_name") if isinstance(data, dict) else None
+    if not isinstance(blob_name, str):
+        logging.warning("[webbackend] Invalid document token request.")
+        return jsonify({"error": "A document name is required."}), 400
+    blob_name = unquote(blob_name)
+    if (not blob_name.strip() or len(blob_name) > 1024
+            or any(ord(char) < 32 for char in blob_name)
+            or "\\" in blob_name or blob_name.startswith("/")
+            or any(part in (".", "..") for part in blob_name.split("/"))):
+        logging.warning("[webbackend] Invalid document name.")
+        return jsonify({"error": "Invalid document name."}), 400
+
+    session_nonce = session.get("document_download_session")
+    if not session_nonce:
+        session_nonce = secrets.token_urlsafe(32)
+        session["document_download_session"] = session_nonce
+    token = document_tokens.dumps({
+        "blob_name": blob_name,
+        "principal_id": g.auth_info["client_principal_id"],
+        "session": session_nonce,
+    })
+    return jsonify({"token": token, "expires_in": DOCUMENT_DOWNLOAD_TTL_SECONDS})
+
 @app.route("/api/get-blob", methods=["POST"])
 def getBlob():
-    blob_name = unquote(request.json["blob_name"])
-    logging.info(f"Starting getBlob function for blob: {blob_name}")
+    data = request.get_json(silent=True)
+    token = data.get("token") if isinstance(data, dict) else None
+    if not isinstance(token, str) or not token or len(token) > 8192:
+        logging.warning("[webbackend] Document read token is missing or invalid.")
+        return jsonify({"error": "A document read token is required."}), 400
+    try:
+        grant = document_tokens.loads(token, max_age=DOCUMENT_DOWNLOAD_TTL_SECONDS)
+    except SignatureExpired:
+        logging.warning("[webbackend] Document read token expired.")
+        return jsonify({"error": "The document read token has expired."}), 403
+    except BadSignature:
+        logging.warning("[webbackend] Invalid document read token.")
+        return jsonify({"error": "Invalid document read token."}), 403
+
+    session_nonce = session.get("document_download_session")
+    if (not isinstance(grant, dict)
+            or not isinstance(grant.get("blob_name"), str)
+            or not isinstance(grant.get("session"), str)
+            or not isinstance(session_nonce, str)
+            or grant.get("principal_id") != g.auth_info["client_principal_id"]
+            or not hmac.compare_digest(grant["session"], session_nonce)):
+        logging.warning("[webbackend] Document read token does not match the current user and session.")
+        return jsonify({"error": "Invalid document read token."}), 403
+
+    blob_name = grant["blob_name"]
     try:
         client_credential = ChainedTokenCredential(
             ManagedIdentityCredential(),
@@ -419,12 +501,14 @@ def getBlob():
         blob_client = blob_service_client.get_blob_client(container='documents', blob=blob_name)
         blob_data = blob_client.download_blob()
         blob_text = blob_data.readall()
-        logging.info(f"Successfully fetched blob: {blob_name}")
+        logging.info("[webbackend] Document download completed.")
         return Response(blob_text, content_type='application/octet-stream')
-    except Exception as e:
+    except ResourceNotFoundError:
+        logging.warning("[webbackend] Requested document was not found.")
+        return jsonify({"error": "Document not found."}), 404
+    except AzureError:
         logging.exception("[webbackend] exception in /api/get-blob")
-        logging.exception(blob_name)
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": "Document storage is unavailable."}), 503
     
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
